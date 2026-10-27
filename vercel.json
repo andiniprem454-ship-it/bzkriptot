@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/history", "destination": "/history.html" },
+    { "source": "/static/history.html", "destination": "/history.html" },
+    { "source": "/static/trade.html", "destination": "/index.html" },
+    { "source": "/trade", "destination": "/index.html" },
+    { "source": "/konohapoly", "destination": "/konohapoly.html" }
+  ]
+}

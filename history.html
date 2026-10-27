@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BzKRIPtot — History, Active Orders & Equity Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#080b10',
+            brandCard: '#111622',
+            brandCardHover: '#171f2e',
+            brandBorder: '#1f293d',
+            accentGreen: '#0ecb81',
+            accentRed: '#f6465d',
+            binanceGold: '#f0b90b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #080b10; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #1f293d; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #374151; }
+  </style>
+</head>
+<body class="bg-brandDark text-slate-200 min-h-screen font-sans flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="bg-brandCard border-b border-brandBorder sticky top-0 z-40 shadow-xl backdrop-blur-md bg-opacity-95">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2 group">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center font-black text-black text-sm shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+            BZ
+          </div>
+          <div>
+            <span class="font-extrabold text-base tracking-tight bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent">
+              BzKRIPtot
+            </span>
+            <span class="text-[10px] text-slate-400 block font-mono">History, Active Orders & Equity Analytics</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="syncBadge" class="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-md flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>LIVE SYNC</span>
+        </span>
+        <button onclick="fetchData()" title="Refresh Data" class="bg-brandDark hover:bg-brandCardHover border border-brandBorder text-slate-300 p-1.5 rounded-lg text-xs transition">
+          🔄
+        </button>
+        <a href="/" class="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-black px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-md shadow-amber-500/20">
+          <span>← Terminal Trading</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 flex-1">
+
+    <!-- Filter & Dropdown Bar -->
+    <div class="bg-brandCard border border-brandBorder rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-lg sm:text-xl font-black text-slate-100 flex items-center gap-2">
+            <span>🔍</span> <span>Audit Transaksi, Saldo & Order Terbuka</span>
+          </h1>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Analisis lengkap riwayat pergerakan modal, floating PnL live, serta antrean limit order tongkrongan.
+          </p>
+        </div>
+
+        <!-- Member Dropdown Selector -->
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <label for="memberFilter" class="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+            Pilih Member:
+          </label>
+          <div class="relative w-full md:w-64">
+            <select id="memberFilter" onchange="applyFilters()" class="w-full bg-brandDark border border-brandBorder hover:border-amber-500/60 rounded-xl px-3 py-2 text-xs font-bold text-amber-400 outline-none focus:border-amber-500 transition cursor-pointer appearance-none shadow-inner">
+              <option value="ALL">🌐 Semua Member (Gabungan)</option>
+              <option value="Saldin Al">👑 Saldin Al (Sultan)</option>
+              <option value="Tegar Juni">👤 Tegar Juni</option>
+              <option value="Hygal Amana">👤 Hygal Amana</option>
+              <option value="NiblaZ">🤖 NiblaZ (Bot Auto-Trader)</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-400 text-xs">
+              ▼
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Filters -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-brandBorder/60">
+        <div>
+          <label class="block text-[10px] text-slate-500 uppercase font-mono mb-1">Filter Koin</label>
+          <select id="coinFilter" onchange="applyFilters()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 outline-none focus:border-amber-500">
+            <option value="ALL">Semua Koin</option>
+            <option value="BTCUSDT">BTC/USDT</option>
+            <option value="ETHUSDT">ETH/USDT</option>
+            <option value="SOLUSDT">SOL/USDT</option>
+            <option value="BNBUSDT">BNB/USDT</option>
+            <option value="XRPUSDT">XRP/USDT</option>
+            <option value="DOGEUSDT">DOGE/USDT</option>
+            <option value="ADAUSDT">ADA/USDT</option>
+            <option value="AVAXUSDT">AVAX/USDT</option>
+            <option value="SUIUSDT">SUI/USDT</option>
+            <option value="LINKUSDT">LINK/USDT</option>
+            <option value="PEPEUSDT">PEPE/USDT</option>
+            <option value="WIFUSDT">WIF/USDT</option>
+            <option value="BONKUSDT">BONK/USDT</option>
+            <option value="RENDERUSDT">RENDER/USDT</option>
+            <option value="NEARUSDT">NEAR/USDT</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-500 uppercase font-mono mb-1">Filter Hasil (Riwayat)</label>
+          <select id="outcomeFilter" onchange="applyFilters()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 outline-none focus:border-amber-500">
+            <option value="ALL">Semua Hasil</option>
+            <option value="PROFIT">Hanya Cuan (+Net PnL)</option>
+            <option value="LOSS">Hanya Boncos (-Net PnL)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-slate-500 uppercase font-mono mb-1">Cari Keterangan / Catatan</label>
+          <input type="text" id="searchFilter" oninput="applyFilters()" placeholder="Cari Take Profit, Cut Loss, Hammer..." class="w-full bg-brandDark border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 outline-none focus:border-amber-500 placeholder-slate-600">
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBER BALANCE, FLOATING PNL & FINANCIAL OVERVIEW -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Card 1: Total Saldo / Ekuitas Bersih -->
+      <div class="bg-gradient-to-br from-brandCard to-brandDark border border-brandBorder/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none"></div>
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">Total Saldo (Ekuitas)</span>
+            <span id="badgeRoiTotal" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">+0.00% ROI</span>
+          </div>
+          <div class="mt-2">
+            <div id="statTotalEquity" class="text-2xl sm:text-3xl font-black text-slate-100 font-mono tracking-tight">$0.00</div>
+            <div id="statTotalIdr" class="text-xs text-amber-400/90 font-mono mt-0.5">~Rp0</div>
+          </div>
+        </div>
+        <div class="pt-3 mt-3 border-t border-brandBorder/50 grid grid-cols-2 text-[11px] font-mono">
+          <div>
+            <span class="text-slate-500 block text-[10px]">Kas Bebas:</span>
+            <span id="statFreeCash" class="font-bold text-slate-200">$0.00</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block text-[10px]">Margin Terpasang:</span>
+            <span id="statLockedMargin" class="font-bold text-slate-200">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Total Floating PnL Live -->
+      <div class="bg-gradient-to-br from-brandCard to-brandDark border border-brandBorder/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none"></div>
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-accentGreen animate-pulse"></span>
+              Total Floating PnL
+            </span>
+            <span id="badgeFloatingStatus" class="text-[10px] font-mono text-slate-400">0 Posisi</span>
+          </div>
+          <div class="mt-2">
+            <div id="statFloatingPnl" class="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-100">$0.00</div>
+            <div id="statFloatingPct" class="text-xs font-mono mt-0.5 text-slate-400">(0.00% terhadap margin)</div>
+          </div>
+        </div>
+        <div class="pt-3 mt-3 border-t border-brandBorder/50 flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>Unrealized Live:</span>
+          <span id="statFloatingIdr" class="text-slate-300 font-bold">~Rp0</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Realized Net Profit & Win Rate -->
+      <div class="bg-gradient-to-br from-brandCard to-brandDark border border-brandBorder/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">Net Realized PnL</span>
+            <span id="statWinRateBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brandDark text-slate-300 border border-brandBorder">WR: 0%</span>
+          </div>
+          <div class="mt-2">
+            <div id="statRealizedPnl" class="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-100">$0.00</div>
+            <div id="statWinLossDetail" class="text-xs text-slate-400 font-mono mt-0.5">0 Menang / 0 Kalah (0 Trades)</div>
+          </div>
+        </div>
+        <div class="pt-3 mt-3 border-t border-brandBorder/50 flex items-center justify-between text-[11px] font-mono">
+          <span class="text-slate-500">Best / Worst:</span>
+          <span class="font-bold">
+            <span id="statBestPnl" class="text-accentGreen">+$0.00</span> / <span id="statWorstPnl" class="text-accentRed">-$0.00</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Card 4: Biaya Transaksi & Efisiensi -->
+      <div class="bg-gradient-to-br from-brandCard to-brandDark border border-brandBorder/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">Total Fee Binance</span>
+            <span class="text-[10px] font-mono text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">0.05% Taker</span>
+          </div>
+          <div class="mt-2">
+            <div id="statTotalFee" class="text-2xl sm:text-3xl font-black font-mono tracking-tight text-amber-400">$0.00</div>
+            <div id="statFeeIdr" class="text-xs text-slate-400 font-mono mt-0.5">~Rp0 disetor ke bursa</div>
+          </div>
+        </div>
+        <div class="pt-3 mt-3 border-t border-brandBorder/50 flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>Rata-rata Fee/Trade:</span>
+          <span id="statAvgFee" class="text-slate-200 font-bold">$0.00</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CHART SECTION: GRAFIK PERTUMBUHAN SALDO & ROI (%) -->
+    <div class="bg-brandCard border border-brandBorder rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-brandBorder/60 pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base">📈</span>
+            <h2 id="chartTitle" class="text-sm sm:text-base font-black text-slate-100 font-sans">
+              Grafik Pertumbuhan Saldo & Riwayat ROI (%)
+            </h2>
+          </div>
+          <p id="chartSubtitle" class="text-xs text-slate-400 font-mono mt-0.5">
+            Pertumbuhan ekuitas modal dari titik awal $1,100.00 per setiap transaksi selesai hingga posisi saat ini.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <div class="bg-brandDark px-2.5 py-1 rounded-lg border border-brandBorder text-slate-400 flex items-center gap-1.5">
+            <span class="text-[10px] text-slate-500 uppercase">Modal Dasar:</span>
+            <span class="font-bold text-slate-200" id="chartBaseCapital">$1,100.00</span>
+          </div>
+          <div class="bg-brandDark px-2.5 py-1 rounded-lg border border-brandBorder text-slate-400 flex items-center gap-1.5">
+            <span class="text-[10px] text-slate-500 uppercase">Puncak ATH:</span>
+            <span class="font-bold text-emerald-400" id="chartPeakEquity">$1,100.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Chart Container -->
+      <div class="relative w-full h-72 sm:h-80 custom-scroll">
+        <canvas id="equityChart"></canvas>
+      </div>
+    </div>
+
+    <!-- SECTION 1: POSISI TERBUKA (LIVE ACTIVE POSITIONS) -->
+    <div class="bg-brandCard border border-brandBorder rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-brandBorder flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-500/10 via-brandCard to-brandCard">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚡</span>
+          <span class="font-bold text-slate-100 text-sm">Posisi Yang Sedang Terbuka (Active Running Positions)</span>
+          <span id="activePositionsCountBadge" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-mono font-bold">0 Posisi</span>
+        </div>
+        <div class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-accentGreen animate-pulse"></span>
+          <span>Floating PnL Live Streaming</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left text-xs font-mono">
+          <thead>
+            <tr class="text-slate-400 bg-brandDark/80 border-b border-brandBorder/80">
+              <th class="py-3 px-3">Waktu Buka</th>
+              <th class="py-3 px-3">Member</th>
+              <th class="py-3 px-3">Pair</th>
+              <th class="py-3 px-3">Arah</th>
+              <th class="py-3 px-3">Margin (Lev)</th>
+              <th class="py-3 px-3">Ukuran Kontrak</th>
+              <th class="py-3 px-3">Harga Entry</th>
+              <th class="py-3 px-3">Harga Sekarang</th>
+              <th class="py-3 px-3">Harga Likuidasi</th>
+              <th class="py-3 px-3">Target TP / SL</th>
+              <th class="py-3 px-3 text-right">Floating Net PnL</th>
+            </tr>
+          </thead>
+          <tbody id="openPositionsTableBody" class="divide-y divide-brandBorder/40">
+            <tr>
+              <td colspan="11" class="text-center py-8 text-slate-500 font-sans">
+                Tidak ada posisi yang sedang terbuka.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 2: ANTREAN LIMIT ORDER (OPEN LIMIT ORDERS) -->
+    <div class="bg-brandCard border border-brandBorder rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-brandBorder flex items-center justify-between text-xs bg-brandDark/60">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⏳</span>
+          <span class="font-bold text-slate-200 text-sm">Antrean Limit Order (Pending Orders)</span>
+          <span id="openOrdersCountBadge" class="bg-brandDark px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 border border-brandBorder">0 Order</span>
+        </div>
+        <div class="text-[11px] text-slate-500 font-mono">
+          Menunggu trigger harga pasar
+        </div>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left text-xs font-mono">
+          <thead>
+            <tr class="text-slate-400 bg-brandDark/70 border-b border-brandBorder/80">
+              <th class="py-3 px-3">Waktu Pasang</th>
+              <th class="py-3 px-3">Member</th>
+              <th class="py-3 px-3">Pair</th>
+              <th class="py-3 px-3">Arah</th>
+              <th class="py-3 px-3">Margin (Lev)</th>
+              <th class="py-3 px-3">Ukuran Total</th>
+              <th class="py-3 px-3">Target Harga Limit</th>
+              <th class="py-3 px-3">Harga Pasar Saat Ini</th>
+              <th class="py-3 px-3">Target TP / SL</th>
+              <th class="py-3 px-3 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody id="openOrdersTableBody" class="divide-y divide-brandBorder/40">
+            <tr>
+              <td colspan="10" class="text-center py-8 text-slate-500 font-sans">
+                Tidak ada limit order dalam antrean.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 3: RIWAYAT TRANSAKSI SELESAI (CLOSED TRADES HISTORY) -->
+    <div class="bg-brandCard border border-brandBorder rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-brandBorder flex items-center justify-between text-xs bg-brandDark/60">
+        <div class="flex items-center gap-2">
+          <span class="text-base">📜</span>
+          <span class="font-bold text-slate-200 text-sm">Audit Riwayat Transaksi Selesai (Trade History Log)</span>
+          <span id="filteredCountBadge" class="bg-brandDark px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 border border-brandBorder">0 Trade Ditemukan</span>
+        </div>
+        <div class="text-[11px] text-slate-500 font-mono">
+          Urutan terbaru di atas
+        </div>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll">
+        <table class="w-full text-left text-xs font-mono">
+          <thead>
+            <tr class="text-slate-400 bg-brandDark/70 border-b border-brandBorder/80">
+              <th class="py-3 px-3">Waktu Tutup</th>
+              <th class="py-3 px-3">Member</th>
+              <th class="py-3 px-3">Pair</th>
+              <th class="py-3 px-3">Arah</th>
+              <th class="py-3 px-3">Ukuran Kontrak</th>
+              <th class="py-3 px-3">Harga Buka</th>
+              <th class="py-3 px-3">Harga Tutup</th>
+              <th class="py-3 px-3">Biaya Fee</th>
+              <th class="py-3 px-3 text-right">Net PnL Realized</th>
+              <th class="py-3 px-3">Keterangan Tutup</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody" class="divide-y divide-brandBorder/40">
+            <tr>
+              <td colspan="10" class="text-center py-12 text-slate-500 font-sans">
+                Memuat riwayat transaksi...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-brandBorder bg-brandCard/50 py-4 text-center text-xs text-slate-500 font-mono">
+    BzKRIPtot v2.5 — Realtime Binance Live Engine & Tongkrongan Kafe Duanja
+  </footer>
+
+  <!-- Logic Script -->
+  <script>
+    const DEFAULT_SB_URL = 'https://hlbskawdbrcpwmknizpq.supabase.co';
+    const DEFAULT_SB_KEY = 'eyJhbG...YeG0';
+    let supabaseClient = null;
+
+    function getSupabaseConfig() {
+      const url = localStorage.getItem('bzkriptot_sb_url') || DEFAULT_SB_URL;
+      const key = localStorage.getItem('bzkriptot_sb_key') || DEFAULT_SB_KEY;
+      if (url && key) return { url, key };
+      return null;
+    }
+
+    function initSupabase() {
+      const cfg = getSupabaseConfig();
+      if (!cfg || !window.supabase) return;
+      try {
+        supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+        // Subscribe to realtime database stream
+        supabaseClient.channel('bzkriptot_history_stream')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bzkriptot_state' }, payload => {
+            if (payload.new && payload.new.data) {
+              globalDB = payload.new.data;
+              rebuildData();
+              const badge = document.getElementById('syncBadge');
+              if (badge) {
+                badge.className = 'text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-md flex items-center gap-1.5';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span><span>SUPABASE REALTIME</span>';
+              }
+            }
+          })
+          .subscribe();
+
+        const badge = document.getElementById('syncBadge');
+        if (badge) {
+          badge.className = 'text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-md flex items-center gap-1.5';
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>SUPABASE CONNECTED</span>';
+        }
+      } catch(e) {
+        console.warn('Supabase init error:', e);
+      }
+    }
+
+    const API_ENDPOINT = (location.origin.includes('vercel.app') || location.origin.includes('github.io') || location.protocol === 'file:')
+      ? 'https://bee-rangers-mods-materials.trycloudflare.com/api/trade/db'
+      : '/api/trade/db';
+    let globalDB = { users: {} };
+    let livePrices = {};
+    let equityChartInstance = null;
+    let currentChartMember = null;
+
+    let allHistoryRecords = [];
+    let allOpenPositions = [];
+    let allOpenOrders = [];
+
+    const MEMBER_COLORS = {
+      'Saldin Al': 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+      'Tegar Juni': 'bg-sky-500/10 text-sky-300 border-sky-500/30',
+      'Hygal Amana': 'bg-purple-500/10 text-purple-300 border-purple-500/30',
+      'NiblaZ': 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+    };
+
+    const MEMBER_CHART_THEMES = {
+      'Saldin Al': { stroke: '#f59e0b', fill: 'rgba(245, 158, 11, 0.1)' },
+      'Tegar Juni': { stroke: '#38bdf8', fill: 'rgba(56, 189, 248, 0.1)' },
+      'Hygal Amana': { stroke: '#c084fc', fill: 'rgba(192, 132, 252, 0.1)' },
+      'NiblaZ': { stroke: '#34d399', fill: 'rgba(52, 211, 153, 0.1)' },
+      'ALL': { stroke: '#fbbf24', fill: 'rgba(251, 191, 36, 0.08)' }
+    };
+
+    function formatPrice(p) {
+      if (p === undefined || p === null) return '$0.00';
+      p = parseFloat(p);
+      if (p < 0.0001) return '$' + p.toFixed(8);
+      if (p < 0.01) return '$' + p.toFixed(6);
+      if (p < 10) return '$' + p.toFixed(4);
+      return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function fetchLivePrices() {
+      try {
+        const res = await fetch('https://data-api.binance.vision/api/v3/ticker/24hr');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            livePrices[item.symbol] = parseFloat(item.lastPrice);
+          });
+          applyFilters();
+        }
+      } catch (err) {
+        // Fallback to CoinGecko if Binance public fails
+        try {
+          const cgRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin,pepe,sui,near,cardano,ripple,binancecoin,avalanche-2,chainlink,dogwifcoin,bonk,render-token&vs_currencies=usd');
+          const cg = await cgRes.json();
+          const m = {
+            'BTCUSDT': 'bitcoin', 'ETHUSDT': 'ethereum', 'SOLUSDT': 'solana',
+            'DOGEUSDT': 'dogecoin', 'PEPEUSDT': 'pepe', 'SUIUSDT': 'sui',
+            'NEARUSDT': 'near', 'ADAUSDT': 'cardano', 'XRPUSDT': 'ripple',
+            'BNBUSDT': 'binancecoin', 'AVAXUSDT': 'avalanche-2', 'LINKUSDT': 'chainlink',
+            'WIFUSDT': 'dogwifcoin', 'BONKUSDT': 'bonk', 'RENDERUSDT': 'render-token'
+          };
+          for (const [pair, cid] of Object.entries(m)) {
+            if (cg[cid] && cg[cid].usd) livePrices[pair] = cg[cid].usd;
+          }
+          applyFilters();
+        } catch (e2) {}
+      }
+    }
+
+    async function fetchData() {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.from('bzkriptot_state').select('data').eq('id', 'state').single();
+          if (!error && data && data.data && data.data.users) {
+            globalDB = data.data;
+            rebuildData();
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // Fallback 1: LocalStorage cache (if offline or no server)
+      const localSaved = localStorage.getItem('bzkriptot_db');
+      if (localSaved) {
+        try {
+          const parsed = JSON.parse(localSaved);
+          if (parsed && parsed.users) {
+            globalDB = parsed;
+            rebuildData();
+          }
+        } catch (e) {}
+      }
+
+      // Fallback 2: Cloudflare backend endpoint
+      try {
+        const res = await fetch(API_ENDPOINT);
+        if (!res.ok) throw new Error('Network error');
+        globalDB = await res.json();
+        rebuildData();
+      } catch (err) {
+        // Silently keep using local/supabase data
+      }
+    }
+
+    function rebuildData() {
+      if (!globalDB || !globalDB.users) return;
+
+      allHistoryRecords = [];
+      allOpenPositions = [];
+      allOpenOrders = [];
+
+      for (const [memberName, userData] of Object.entries(globalDB.users)) {
+        // 1. History
+        (userData.history || []).forEach(item => {
+          allHistoryRecords.push({ ...item, memberName });
+        });
+
+        // 2. Open Positions
+        (userData.positions || []).forEach(item => {
+          allOpenPositions.push({ ...item, memberName });
+        });
+
+        // 3. Open Orders
+        (userData.openOrders || []).forEach(item => {
+          allOpenOrders.push({ ...item, memberName });
+        });
+      }
+
+      // Sort
+      allHistoryRecords.sort((a, b) => (b.id || 0) - (a.id || 0));
+      allOpenPositions.sort((a, b) => (b.id || 0) - (a.id || 0));
+      allOpenOrders.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const selectedMember = document.getElementById('memberFilter').value;
+      const selectedCoin = document.getElementById('coinFilter').value;
+      const selectedOutcome = document.getElementById('outcomeFilter').value;
+      const searchKeyword = (document.getElementById('searchFilter').value || '').trim().toLowerCase();
+
+      // Filter Open Positions
+      const filteredPositions = allOpenPositions.filter(p => {
+        if (selectedMember !== 'ALL' && p.memberName !== selectedMember) return false;
+        if (selectedCoin !== 'ALL' && p.pair !== selectedCoin) return false;
+        if (searchKeyword) {
+          const hay = `${p.pair || ''} ${p.side || ''} ${p.memberName || ''}`.toLowerCase();
+          if (!hay.includes(searchKeyword)) return false;
+        }
+        return true;
+      });
+
+      // Filter Open Orders
+      const filteredOrders = allOpenOrders.filter(o => {
+        if (selectedMember !== 'ALL' && o.memberName !== selectedMember) return false;
+        if (selectedCoin !== 'ALL' && o.pair !== selectedCoin) return false;
+        if (searchKeyword) {
+          const hay = `${o.pair || ''} ${o.side || ''} ${o.memberName || ''}`.toLowerCase();
+          if (!hay.includes(searchKeyword)) return false;
+        }
+        return true;
+      });
+
+      // Filter History
+      const filteredHistory = allHistoryRecords.filter(t => {
+        if (selectedMember !== 'ALL' && t.memberName !== selectedMember) return false;
+        if (selectedCoin !== 'ALL' && t.pair !== selectedCoin) return false;
+        if (selectedOutcome === 'PROFIT' && t.pnl <= 0) return false;
+        if (selectedOutcome === 'LOSS' && t.pnl >= 0) return false;
+        if (searchKeyword) {
+          const hay = `${t.time || ''} ${t.pair || ''} ${t.side || ''} ${t.memberName || ''}`.toLowerCase();
+          if (!hay.includes(searchKeyword)) return false;
+        }
+        return true;
+      });
+
+      renderOverviewAndKPIs(selectedMember, filteredHistory, filteredPositions);
+      renderChart(selectedMember);
+      renderOpenPositionsTable(filteredPositions);
+      renderOpenOrdersTable(filteredOrders);
+      renderHistoryTable(filteredHistory);
+    }
+
+    function renderOverviewAndKPIs(selectedMember, historyList, openList) {
+      // 1. Calculate Balances & Live Floating PnL
+      let totalFreeCash = 0;
+      let totalLockedMargin = 0;
+      let totalFloatingPnl = 0;
+      let baseInitialMargin = 0;
+
+      if (selectedMember === 'ALL') {
+        for (const [name, u] of Object.entries(globalDB.users || {})) {
+          totalFreeCash += parseFloat(u.cash || 0);
+          baseInitialMargin += 1100.0;
+        }
+      } else {
+        const u = (globalDB.users || {})[selectedMember] || {};
+        totalFreeCash = parseFloat(u.cash || 0);
+        baseInitialMargin = 1100.0;
+      }
+
+      // Sum floating PnL from the open positions belonging to target
+      openList.forEach(pos => {
+        const curPrice = livePrices[pos.pair] || pos.entryPrice;
+        const isLong = pos.side === 'LONG';
+        let pnl = 0;
+        if (isLong) pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+        else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+        const estCloseFee = (pos.totalSize * (curPrice / pos.entryPrice)) * 0.0005;
+        const netPnl = pnl - (pos.openFee || 0) - estCloseFee;
+
+        totalFloatingPnl += netPnl;
+        totalLockedMargin += parseFloat(pos.margin || 0);
+      });
+
+      const totalEquity = totalFreeCash + totalLockedMargin + totalFloatingPnl;
+      const totalRoiPct = baseInitialMargin > 0 ? (((totalEquity - baseInitialMargin) / baseInitialMargin) * 100) : 0;
+      const floatingRoiPct = totalLockedMargin > 0 ? ((totalFloatingPnl / totalLockedMargin) * 100) : 0;
+
+      // Update Card 1: Total Saldo
+      document.getElementById('statTotalEquity').innerText = '$' + totalEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('statTotalIdr').innerText = '~Rp' + Math.round(totalEquity * 18000).toLocaleString('id-ID');
+      document.getElementById('statFreeCash').innerText = '$' + totalFreeCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('statLockedMargin').innerText = '$' + totalLockedMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
+      const roiBadge = document.getElementById('badgeRoiTotal');
+      roiBadge.innerText = `${totalRoiPct >= 0 ? '+' : ''}${totalRoiPct.toFixed(2)}% Total ROI`;
+      roiBadge.className = `text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${totalRoiPct >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`;
+
+      // Update Card 2: Floating PnL Live
+      const floatEl = document.getElementById('statFloatingPnl');
+      floatEl.innerText = `${totalFloatingPnl >= 0 ? '+' : ''}$${totalFloatingPnl.toFixed(2)}`;
+      floatEl.className = `text-2xl sm:text-3xl font-black font-mono tracking-tight ${totalFloatingPnl >= 0 ? 'text-accentGreen' : 'text-accentRed'}`;
+      document.getElementById('statFloatingPct').innerText = `(${totalFloatingPnl >= 0 ? '+' : ''}${floatingRoiPct.toFixed(2)}% thdp margin)`;
+      document.getElementById('statFloatingIdr').innerText = `${totalFloatingPnl >= 0 ? '+' : ''}~Rp${Math.round(totalFloatingPnl * 18000).toLocaleString('id-ID')}`;
+      document.getElementById('badgeFloatingStatus').innerText = `${openList.length} Posisi Aktif`;
+
+      // Update Card 3: Realized PnL & Win Rate
+      const totalTrades = historyList.length;
+      let totalNetPnl = 0;
+      let totalFee = 0;
+      let winCount = 0;
+      let lossCount = 0;
+      let bestPnl = -999999;
+      let worstPnl = 999999;
+
+      historyList.forEach(t => {
+        const pnl = t.pnl || 0;
+        const fee = t.fee || 0;
+        totalNetPnl += pnl;
+        totalFee += fee;
+
+        if (pnl > 0) winCount++;
+        else if (pnl < 0) lossCount++;
+
+        if (pnl > bestPnl) bestPnl = pnl;
+        if (pnl < worstPnl) worstPnl = pnl;
+      });
+
+      const winRate = totalTrades > 0 ? ((winCount / totalTrades) * 100).toFixed(1) : '0.0';
+      const realPnlEl = document.getElementById('statRealizedPnl');
+      realPnlEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}$${totalNetPnl.toFixed(2)}`;
+      realPnlEl.className = `text-2xl sm:text-3xl font-black font-mono tracking-tight ${totalNetPnl >= 0 ? 'text-accentGreen' : 'text-accentRed'}`;
+
+      document.getElementById('statWinRateBadge').innerText = `WR: ${winRate}%`;
+      document.getElementById('statWinLossDetail').innerText = `${winCount} Menang / ${lossCount} Kalah (${totalTrades} Trades)`;
+      document.getElementById('statBestPnl').innerText = bestPnl > -999999 ? `+$${bestPnl.toFixed(2)}` : '+$0.00';
+      document.getElementById('statWorstPnl').innerText = worstPnl < 999999 ? `-$${Math.abs(worstPnl).toFixed(2)}` : '-$0.00';
+
+      // Update Card 4: Fee Binance
+      document.getElementById('statTotalFee').innerText = '$' + totalFee.toFixed(2);
+      document.getElementById('statFeeIdr').innerText = '~Rp' + Math.round(totalFee * 18000).toLocaleString('id-ID') + ' disetor ke bursa';
+      document.getElementById('statAvgFee').innerText = totalTrades > 0 ? '$' + (totalFee / totalTrades).toFixed(4) : '$0.00';
+
+      // Badges
+      document.getElementById('activePositionsCountBadge').innerText = `${openList.length} Posisi`;
+      document.getElementById('filteredCountBadge').innerText = `${totalTrades} Trade Ditemukan`;
+    }
+
+    function renderChart(selectedMember) {
+      const ctx = document.getElementById('equityChart');
+      if (!ctx) return;
+
+      const titleEl = document.getElementById('chartTitle');
+      const subtitleEl = document.getElementById('chartSubtitle');
+      const baseEl = document.getElementById('chartBaseCapital');
+      const peakEl = document.getElementById('chartPeakEquity');
+
+      // Helper function to build time-based equity & ROI series
+      function buildUserSeries(userName, u) {
+        const hist = [...(u.history || [])].sort((a, b) => (a.id || 0) - (b.id || 0));
+        const startTs = hist.length > 0 ? (hist[0].id - 3600000) : (Date.now() - 86400000);
+
+        const points = [{ x: startTs, y: 1100.0 }];
+        const rois = [{ x: startTs, y: 0.0 }];
+
+        let currEquity = 1100.0;
+        hist.forEach(trade => {
+          currEquity += parseFloat(trade.pnl || 0);
+          const ts = trade.id || Date.now();
+          points.push({ x: ts, y: parseFloat(currEquity.toFixed(2)) });
+          rois.push({ x: ts, y: parseFloat((((currEquity - 1100.0) / 1100.0) * 100).toFixed(2)) });
+        });
+
+        // Add live point with floating PnL
+        let floatingSum = 0;
+        (u.positions || []).forEach(pos => {
+          const curPrice = livePrices[pos.pair] || pos.entryPrice;
+          const isLong = pos.side === 'LONG';
+          let pnl = 0;
+          if (isLong) pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+          else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+          const estCloseFee = (pos.totalSize * (curPrice / pos.entryPrice)) * 0.0005;
+          floatingSum += (pnl - (pos.openFee || 0) - estCloseFee);
+        });
+
+        const liveEquity = currEquity + floatingSum;
+        const nowTs = Date.now();
+        points.push({ x: nowTs, y: parseFloat(liveEquity.toFixed(2)) });
+        rois.push({ x: nowTs, y: parseFloat((((liveEquity - 1100.0) / 1100.0) * 100).toFixed(2)) });
+
+        return { points, rois };
+      }
+
+      let chartData = {};
+
+      if (selectedMember === 'ALL') {
+        titleEl.innerText = '📊 Perbandingan Timeline Saldo Semua Member';
+        subtitleEl.innerText = 'Grafik pertumbuhan modal antarmember disinkronkan berdasarkan sumbu waktu nyata (DD/MM HH:mm)';
+        baseEl.innerText = '$4,400.00 (Total)';
+
+        let globalPeak = 1100.0;
+        const datasets = [];
+
+        for (const [name, u] of Object.entries(globalDB.users || {})) {
+          const series = buildUserSeries(name, u);
+          const theme = MEMBER_CHART_THEMES[name] || { stroke: '#94a3b8', fill: 'transparent' };
+          const peak = Math.max(...series.points.map(p => p.y));
+          if (peak > globalPeak) globalPeak = peak;
+
+          datasets.push({
+            label: `${name} ($)`,
+            data: series.points,
+            borderColor: theme.stroke,
+            backgroundColor: theme.fill,
+            borderWidth: 2.2,
+            tension: 0.2,
+            pointRadius: 2.5,
+            pointHoverRadius: 5,
+            fill: false,
+            yAxisID: 'y'
+          });
+        }
+
+        peakEl.innerText = '$' + globalPeak.toFixed(2);
+
+        chartData = {
+          datasets: datasets
+        };
+
+      } else {
+        // Single member view
+        const u = (globalDB.users || {})[selectedMember] || {};
+        const series = buildUserSeries(selectedMember, u);
+        const theme = MEMBER_CHART_THEMES[selectedMember] || MEMBER_CHART_THEMES['ALL'];
+        const peak = Math.max(...series.points.map(p => p.y));
+
+        titleEl.innerText = `📈 Timeline Pertumbuhan Saldo & ROI — ${selectedMember}`;
+        subtitleEl.innerText = `Grafik saldo ekuitas ($) dan riwayat ROI kumulatif akun ${selectedMember} berdasarkan waktu kejadian`;
+        baseEl.innerText = '$1,100.00';
+        peakEl.innerText = '$' + peak.toFixed(2);
+
+        chartData = {
+          datasets: [
+            {
+              label: 'Saldo Ekuitas ($)',
+              data: series.points,
+              borderColor: theme.stroke,
+              backgroundColor: theme.fill,
+              borderWidth: 2.5,
+              tension: 0.2,
+              fill: true,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+              pointBackgroundColor: theme.stroke,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Kumulatif ROI (%)',
+              data: series.rois,
+              borderColor: '#10b981',
+              borderDash: [4, 4],
+              borderWidth: 1.8,
+              tension: 0.2,
+              fill: false,
+              pointRadius: 2,
+              yAxisID: 'y1'
+            }
+          ]
+        };
+      }
+
+      // Check if we can do a seamless zero-flicker in-place update
+      if (equityChartInstance && currentChartMember === selectedMember && equityChartInstance.data.datasets.length === chartData.datasets.length) {
+        chartData.datasets.forEach((ds, i) => {
+          if (equityChartInstance.data.datasets[i]) {
+            equityChartInstance.data.datasets[i].data = ds.data;
+            equityChartInstance.data.datasets[i].label = ds.label;
+          }
+        });
+        equityChartInstance.update('none'); // Update without redraw animation -> ZERO flicker
+        return;
+      }
+
+      // If switching member or initial load, recreate chart cleanly
+      if (equityChartInstance) {
+        equityChartInstance.destroy();
+      }
+
+      currentChartMember = selectedMember;
+
+      equityChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 250 },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#94a3b8',
+                font: { family: 'monospace', size: 11 },
+                boxWidth: 14
+              }
+            },
+            tooltip: {
+              backgroundColor: '#111622',
+              borderColor: '#1f293d',
+              borderWidth: 1,
+              titleColor: '#f1f5f9',
+              bodyColor: '#cbd5e1',
+              titleFont: { family: 'monospace', weight: 'bold' },
+              bodyFont: { family: 'monospace' },
+              padding: 10,
+              callbacks: {
+                title: function(tooltipItems) {
+                  if (!tooltipItems.length) return '';
+                  const ts = tooltipItems[0].parsed.x;
+                  const d = new Date(ts);
+                  const day = String(d.getDate()).padStart(2, '0');
+                  const mon = String(d.getMonth() + 1).padStart(2, '0');
+                  const h = String(d.getHours()).padStart(2, '0');
+                  const m = String(d.getMinutes()).padStart(2, '0');
+                  const s = String(d.getSeconds()).padStart(2, '0');
+                  return `Waktu: ${day}/${mon} ${h}:${m}:${s}`;
+                },
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) label += ': ';
+                  if (context.dataset.yAxisID === 'y1' || label.includes('ROI')) {
+                    label += (context.parsed.y >= 0 ? '+' : '') + context.parsed.y.toFixed(2) + '%';
+                  } else {
+                    label += '$' + context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              grid: { color: 'rgba(31, 41, 61, 0.4)' },
+              ticks: {
+                color: '#64748b',
+                font: { family: 'monospace', size: 10 },
+                maxTicksLimit: 7,
+                callback: function(val) {
+                  if (!val) return '';
+                  const d = new Date(val);
+                  const day = String(d.getDate()).padStart(2, '0');
+                  const mon = String(d.getMonth() + 1).padStart(2, '0');
+                  const h = String(d.getHours()).padStart(2, '0');
+                  const m = String(d.getMinutes()).padStart(2, '0');
+                  return `${day}/${mon} ${h}:${m}`;
+                }
+              }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              grid: { color: 'rgba(31, 41, 61, 0.6)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { family: 'monospace', size: 10 },
+                callback: function(val) { return '$' + val; }
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: selectedMember !== 'ALL',
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: {
+                color: '#10b981',
+                font: { family: 'monospace', size: 10 },
+                callback: function(val) { return (val >= 0 ? '+' : '') + val + '%'; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderOpenPositionsTable(list) {
+      const tbody = document.getElementById('openPositionsTableBody');
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" class="text-center py-8 text-slate-500 font-sans">
+              Tidak ada posisi yang sedang terbuka saat ini.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(pos => {
+        const curPrice = livePrices[pos.pair] || pos.entryPrice;
+        const isLong = pos.side === 'LONG';
+        const memberStyle = MEMBER_COLORS[pos.memberName] || 'bg-slate-800 text-slate-300 border-slate-700';
+
+        let pnl = 0;
+        if (isLong) pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+        else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+        const estCloseFee = (pos.totalSize * (curPrice / pos.entryPrice)) * 0.0005;
+        const netPnl = pnl - (pos.openFee || 0) - estCloseFee;
+        const pnlPct = (netPnl / pos.margin) * 100;
+        const isGreen = netPnl >= 0;
+
+        return `
+          <tr class="hover:bg-brandDark/50 transition">
+            <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${pos.time || '--'}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="px-2 py-0.5 rounded-md border text-[11px] font-bold ${memberStyle}">
+                ${pos.memberName}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 font-bold text-slate-100 whitespace-nowrap">${pos.pair}</td>
+            <td class="py-2.5 px-3 font-bold whitespace-nowrap ${isLong ? 'text-accentGreen' : 'text-accentRed'}">
+              ${pos.side}
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">$${pos.margin.toFixed(2)} <span class="text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1 rounded">${pos.leverage}x</span></td>
+            <td class="py-2.5 px-3 text-slate-300 whitespace-nowrap">$${(pos.totalSize || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${formatPrice(pos.entryPrice)}</td>
+            <td class="py-2.5 px-3 text-slate-100 font-bold whitespace-nowrap">${formatPrice(curPrice)}</td>
+            <td class="py-2.5 px-3 text-accentRed whitespace-nowrap">${formatPrice(pos.liqPrice)}</td>
+            <td class="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap">
+              <div><span class="text-slate-500">TP:</span> ${pos.tp ? `<span class="text-accentGreen font-bold">${formatPrice(pos.tp)}</span>` : `<span class="text-slate-600">--</span>`}</div>
+              <div><span class="text-slate-500">SL:</span> ${pos.sl ? `<span class="text-accentRed font-bold">${formatPrice(pos.sl)}</span>` : `<span class="text-slate-600">--</span>`}</div>
+            </td>
+            <td class="py-2.5 px-3 text-right font-bold whitespace-nowrap ${isGreen ? 'text-accentGreen' : 'text-accentRed'}">
+              ${isGreen ? '+' : ''}$${netPnl.toFixed(2)} (${isGreen ? '+' : ''}${pnlPct.toFixed(1)}%)
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderOpenOrdersTable(list) {
+      const tbody = document.getElementById('openOrdersTableBody');
+      const badge = document.getElementById('openOrdersCountBadge');
+      if (badge) badge.innerText = `${list.length} Order`;
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" class="text-center py-8 text-slate-500 font-sans">
+              Tidak ada antrean limit order saat ini.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(ord => {
+        const curPrice = livePrices[ord.pair] || ord.limitPrice;
+        const isLong = ord.side === 'LONG';
+        const memberStyle = MEMBER_COLORS[ord.memberName] || 'bg-slate-800 text-slate-300 border-slate-700';
+
+        return `
+          <tr class="hover:bg-brandDark/50 transition">
+            <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${ord.time || '--'}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="px-2 py-0.5 rounded-md border text-[11px] font-bold ${memberStyle}">
+                ${ord.memberName}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 font-bold text-slate-100 whitespace-nowrap">${ord.pair}</td>
+            <td class="py-2.5 px-3 font-bold whitespace-nowrap ${isLong ? 'text-accentGreen' : 'text-accentRed'}">
+              ${ord.side}
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">$${ord.margin.toFixed(2)} <span class="text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1 rounded">${ord.leverage}x</span></td>
+            <td class="py-2.5 px-3 text-slate-300 whitespace-nowrap">$${(ord.totalSize || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            <td class="py-2.5 px-3 text-amber-400 font-bold whitespace-nowrap">${formatPrice(ord.limitPrice)}</td>
+            <td class="py-2.5 px-3 text-slate-300 whitespace-nowrap">${formatPrice(curPrice)}</td>
+            <td class="py-2.5 px-3 font-mono text-[11px] whitespace-nowrap">
+              <div><span class="text-slate-500">TP:</span> ${ord.tp ? `<span class="text-accentGreen font-bold">${formatPrice(ord.tp)}</span>` : `<span class="text-slate-600">--</span>`}</div>
+              <div><span class="text-slate-500">SL:</span> ${ord.sl ? `<span class="text-accentRed font-bold">${formatPrice(ord.sl)}</span>` : `<span class="text-slate-600">--</span>`}</div>
+            </td>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+              <span class="bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold">
+                ANTRE
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderHistoryTable(list) {
+      const tbody = document.getElementById('historyTableBody');
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" class="text-center py-12 text-slate-500 font-sans">
+              Tidak ada riwayat transaksi yang cocok dengan filter yang dipilih.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(t => {
+        const isGreen = (t.pnl || 0) >= 0;
+        const memberStyle = MEMBER_COLORS[t.memberName] || 'bg-slate-800 text-slate-300 border-slate-700';
+        const isLong = t.side === 'LONG';
+
+        let rawTime = t.time || '--';
+        let note = '--';
+        if (rawTime.includes('(')) {
+          const match = rawTime.match(/\((.*?)\)/);
+          if (match) {
+            note = match[1];
+            rawTime = rawTime.replace(/\(.*?\)/, '').trim();
+          }
+        }
+
+        let noteBadge = `<span class="text-slate-500 text-[11px]">${note}</span>`;
+        if (note.includes('TAKE PROFIT') || note.includes('TP')) {
+          noteBadge = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">🎯 ${note}</span>`;
+        } else if (note.includes('STOP LOSS') || note.includes('CUT LOSS') || note.includes('SL')) {
+          noteBadge = `<span class="bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">🛡️ ${note}</span>`;
+        } else if (note.includes('LIQUIDAT')) {
+          noteBadge = `<span class="bg-red-950 text-red-400 border border-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold">💀 LIKUIDASI</span>`;
+        } else if (note.includes('CLOSE ALL')) {
+          noteBadge = `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-bold">⚡ CLOSE ALL</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-brandDark/50 transition">
+            <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${rawTime}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="px-2 py-0.5 rounded-md border text-[11px] font-bold ${memberStyle}">
+                ${t.memberName}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 font-bold text-slate-100 whitespace-nowrap">${t.pair}</td>
+            <td class="py-2.5 px-3 font-bold whitespace-nowrap ${isLong ? 'text-accentGreen' : 'text-accentRed'}">
+              ${t.side}
+            </td>
+            <td class="py-2.5 px-3 text-slate-300 whitespace-nowrap">$${(t.size || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${formatPrice(t.entryPrice)}</td>
+            <td class="py-2.5 px-3 text-slate-200 font-bold whitespace-nowrap">${formatPrice(t.exitPrice)}</td>
+            <td class="py-2.5 px-3 text-amber-400 whitespace-nowrap">$${(t.fee || 0).toFixed(4)}</td>
+            <td class="py-2.5 px-3 text-right font-bold whitespace-nowrap ${isGreen ? 'text-accentGreen' : 'text-accentRed'}">
+              ${isGreen ? '+' : ''}$${(t.pnl || 0).toFixed(2)}
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">${noteBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Auto load & polling
+    window.onload = () => {
+      initSupabase();
+      fetchData();
+      fetchLivePrices();
+      setInterval(fetchData, 4000);
+      setInterval(fetchLivePrices, 2500);
+    };
+  </script>
+</body>
+</html>

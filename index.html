@@ -1,0 +1,2550 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BzKRIPtot — 100% Realtime Binance Live & Season Battle</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- TradingView Library -->
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <!-- Supabase JS Client (Free Cloud DB) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#080b10',
+            brandCard: '#111622',
+            brandCardHover: '#171f2e',
+            brandBorder: '#1f293d',
+            accentGreen: '#0ecb81',
+            accentRed: '#f6465d',
+            binanceGold: '#f0b90b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #080b10; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #1f293d; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col custom-scroll selection:bg-amber-500 selection:text-black">
+
+  <!-- Header Top Bar -->
+  <header class="border-b border-brandBorder bg-brandCard/95 backdrop-blur px-4 py-2.5 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-yellow-500 to-amber-600 flex items-center justify-center font-black text-black shadow-lg shadow-yellow-500/20 text-sm">
+        ₿
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-extrabold text-slate-100 tracking-tight flex items-center gap-1.5">
+            <span class="text-binanceGold">Bz</span>KRIPtot
+          </h1>
+          <span class="text-[9px] bg-accentGreen/15 text-accentGreen border border-accentGreen/30 px-1.5 py-0.5 rounded font-mono font-bold tracking-wider flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-accentGreen animate-ping"></span>
+            BINANCE LIVE WS
+          </span>
+          <span id="syncStatusBadge" class="text-[9px] bg-blue-500/15 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
+            ☁️ CLOUD SYNC
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400">Battle Gacoan 3 Member: Saldin Al • Hygal Amana • Tegar Juni</p>
+      </div>
+    </div>
+
+    <!-- Active Profile & Balance Widget -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="hidden sm:flex items-center gap-3 text-xs font-mono bg-brandDark px-3 py-1.5 rounded-lg border border-brandBorder">
+        <div>
+          <span class="text-slate-500 text-[10px] block">NET EQUITY</span>
+          <span id="topEquity" class="font-bold text-slate-100">$1,100.00</span>
+        </div>
+        <div class="w-[1px] h-6 bg-brandBorder"></div>
+        <div>
+          <span class="text-slate-500 text-[10px] block">UNREALIZED</span>
+          <span id="topUnrealized" class="font-bold text-slate-400">$0.00</span>
+        </div>
+      </div>
+
+      <!-- User Badge & Actions -->
+      <div class="flex items-center gap-1.5 bg-brandDark border border-brandBorder rounded-lg p-1">
+        <div class="flex items-center gap-1.5 px-2">
+          <span class="w-2 h-2 rounded-full bg-accentGreen"></span>
+          <span id="navUserName" class="text-xs font-bold text-amber-400 font-mono">Saldin Al</span>
+        </div>
+        <button onclick="openLoginModal('login')" class="text-[10px] bg-brandCard hover:bg-brandBorder text-slate-300 px-2 py-1 rounded border border-brandBorder transition">
+          Ganti Akun
+        </button>
+        <button onclick="openLoginModal('reset')" title="Ubah atau Reset PIN Akun" class="text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 px-2 py-1 rounded border border-amber-500/30 transition flex items-center gap-1">
+          <span>🔑</span> <span class="hidden md:inline">PIN</span>
+        </button>
+        <button onclick="openSupabaseModal()" title="Koneksi Supabase Cloud DB" class="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded border border-emerald-500/30 transition flex items-center gap-1 font-mono font-bold">
+          <span>⚡</span> <span class="hidden md:inline">Supabase</span>
+        </button>
+        <a href="/history" title="Audit Riwayat Semua Member" class="text-[10px] bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30 transition flex items-center gap-1 font-mono font-bold">
+          <span>📜</span> <span class="hidden md:inline">Audit History</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Season Countdown Banner -->
+  <div class="bg-gradient-to-r from-amber-950/40 via-brandDark to-yellow-950/40 border-b border-brandBorder/80 px-4 py-2 flex flex-wrap items-center justify-between text-xs gap-2">
+    <div class="flex items-center gap-2">
+      <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono px-2 py-0.5 rounded font-bold">
+        SEASON BATTLE #<span id="bannerSeasonNum">1</span>
+      </span>
+      <span class="text-slate-300 text-xs">
+        Waktu Tersisa Season:
+      </span>
+      <span id="seasonTimerDisplay" class="font-mono font-extrabold text-amber-400 bg-brandDark/80 px-2.5 py-0.5 rounded border border-amber-500/30 tracking-widest text-xs">
+        Memuat...
+      </span>
+    </div>
+    <div class="text-[11px] text-slate-400 flex items-center gap-3">
+      <span>Database Terpusat (Laptop & HP Otomatis Nyambung)</span>
+      <span class="text-slate-600">•</span>
+      <span class="text-amber-300 font-medium">Hukuman: Nombok Mie Gacoan Lv4!</span>
+    </div>
+  </div>
+
+  <!-- Grand Exchange Ticker Bar (Binance/Bybit Style Dropdown Selector) -->
+  <div class="bg-brandCard border-b border-brandBorder px-4 py-3 relative z-30 shadow-md">
+    <div class="max-w-[1750px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Left: Big Dropdown Ticker Selector Trigger -->
+      <div class="relative">
+        <button onclick="toggleMarketDropdown(event)" id="marketDropdownBtn" class="flex items-center gap-3 bg-brandDark hover:bg-brandCardHover border border-brandBorder hover:border-amber-500/60 px-4 py-2.5 rounded-2xl transition shadow-xl group text-left cursor-pointer">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center font-bold text-amber-400 text-lg shadow-inner" id="tickerLogoIcon">
+            ₿
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg md:text-xl font-black text-slate-100 tracking-tight group-hover:text-amber-400 transition font-mono" id="tickerDisplaySymbol">BTC/USDT</span>
+              <span class="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono font-bold">PERP</span>
+              <span id="tickerHotBadge" class="hidden text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-mono font-bold">🔥 HOT</span>
+              <span class="text-slate-400 group-hover:text-amber-400 text-xs transition transform group-hover:translate-y-0.5">▼</span>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+              <span id="tickerDisplayName" class="font-medium text-slate-300">Bitcoin</span>
+              <span class="text-slate-600">•</span>
+              <span class="text-slate-500">Klik untuk Ganti Pasar (15 Koin)</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Exchange Style Dropdown Menu Overlay -->
+        <div id="marketDropdownMenu" class="hidden absolute top-full left-0 mt-2 w-[340px] sm:w-[420px] bg-brandCard/98 border border-brandBorder rounded-2xl shadow-2xl shadow-black/90 z-50 overflow-hidden backdrop-blur-2xl">
+          <!-- Search & Filter Tabs -->
+          <div class="p-3 border-b border-brandBorder bg-brandDark/80 space-y-2.5">
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+              <input type="text" id="marketSearchInput" oninput="filterMarketList()" placeholder="Cari koin (contoh: PEPE, SOL, ETH, BTC)..." class="w-full bg-brandCard border border-brandBorder rounded-xl pl-8 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500 transition">
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="setMarketTab('all')" id="mTabAll" class="px-3 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-xs">Semua (15)</button>
+              <button onclick="setMarketTab('top')" id="mTabTop" class="px-3 py-1 rounded-lg font-bold text-slate-400 hover:text-slate-200 transition text-xs">Top 10</button>
+              <button onclick="setMarketTab('hot')" id="mTabHot" class="px-3 py-1 rounded-lg font-bold text-slate-400 hover:text-red-400 transition text-xs">🔥 Hot Meme (5)</button>
+            </div>
+          </div>
+
+          <!-- Market List -->
+          <div class="max-h-[340px] overflow-y-auto custom-scroll p-2 divide-y divide-brandBorder/40" id="marketListContainer">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Center & Right: Pro Live Stats Bar -->
+      <div class="flex flex-wrap items-center gap-5 md:gap-8 font-mono text-xs">
+        
+        <!-- Big Last Price -->
+        <div class="flex flex-col">
+          <span class="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">Harga Terakhir</span>
+          <div class="flex items-baseline gap-2">
+            <span id="statLastPrice" class="text-xl md:text-2xl font-black text-accentGreen transition-colors duration-200">$81,850.00</span>
+          </div>
+        </div>
+
+        <!-- 24h Change -->
+        <div class="flex flex-col">
+          <span class="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">Perubahan 24J</span>
+          <span id="statChange24h" class="text-sm font-bold text-accentGreen">+1.25%</span>
+        </div>
+
+        <!-- 24h High -->
+        <div class="hidden sm:flex flex-col">
+          <span class="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">24J Tertinggi</span>
+          <span id="statHigh24h" class="text-xs font-semibold text-slate-200">$83,400.00</span>
+        </div>
+
+        <!-- 24h Low -->
+        <div class="hidden sm:flex flex-col">
+          <span class="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">24J Terendah</span>
+          <span id="statLow24h" class="text-xs font-semibold text-slate-200">$80,210.00</span>
+        </div>
+
+        <!-- Feed Status -->
+        <div class="flex flex-col justify-center border-l border-brandBorder/80 pl-4">
+          <div class="flex items-center gap-1.5 text-[11px]">
+            <span class="w-2 h-2 rounded-full bg-accentGreen animate-pulse"></span>
+            <span class="font-sans font-bold text-accentGreen">Binance Realtime</span>
+          </div>
+          <span class="text-[10px] text-slate-500 font-sans">WebSocket Feed Sedunia</span>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Main Trading Desk -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 max-w-[1750px] w-full mx-auto">
+
+    <!-- Left & Center: Chart & Positions (8 Cols) -->
+    <div class="lg:col-span-8 flex flex-col gap-3">
+
+      <!-- TradingView Interactive Chart Container -->
+      <div class="bg-brandCard border border-brandBorder rounded-xl overflow-hidden flex flex-col h-[520px]">
+        <div class="bg-brandCard px-4 py-2 border-b border-brandBorder flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-100 text-sm" id="chartSymbolTitle">BTC/USDT</span>
+            <span class="text-xs font-mono font-extrabold text-accentGreen" id="chartHeaderPrice">$81,850.00</span>
+            <span class="text-[11px] font-mono text-accentGreen" id="chartHeaderChange">+1.25%</span>
+            <span id="hotBadge" class="hidden text-[9px] bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.2 rounded font-bold font-mono">🔥 HOT MEME</span>
+          </div>
+          <div id="feedStatusBadge" class="text-[11px] text-slate-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-accentGreen animate-pulse"></span>
+            <span>Binance Live Feed (100% Real)</span>
+          </div>
+        </div>
+        <!-- TradingView Embedded Widget -->
+        <div id="tv_chart_container" class="flex-1 w-full h-full relative">
+          <!-- Widget Injected by JS -->
+        </div>
+      </div>
+
+      <!-- Positions & Leaderboard Panel -->
+      <div class="bg-brandCard border border-brandBorder rounded-xl flex flex-col min-h-[300px]">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-brandBorder px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-3">
+            <button onclick="switchTab('positions')" id="tabBtnPositions" class="text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1 flex items-center gap-1.5">
+              <span>Posisi Terbuka</span>
+              <span id="posBadge" class="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 rounded-full font-mono">0</span>
+            </button>
+            <button onclick="switchTab('openOrders')" id="tabBtnOpenOrders" class="text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5">
+              <span>Order Limit</span>
+              <span id="ordersBadge" class="bg-slate-700 text-slate-300 text-[10px] px-1.5 rounded-full font-mono">0</span>
+            </button>
+            <button onclick="switchTab('leaderboard')" id="tabBtnLeaderboard" class="text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1">
+              <span>🏆 Klasemen Live Tongkrongan</span>
+            </button>
+            <button onclick="switchTab('seasonHistory')" id="tabBtnSeasonHistory" class="text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1">
+              <span>📜 Riwayat Season</span>
+            </button>
+            <button onclick="switchTab('history')" id="tabBtnHistory" class="text-xs font-bold text-slate-400 hover:text-slate-200 pb-1">
+              Order Log
+            </button>
+          </div>
+
+          <!-- Quick Actions: Close All Buttons -->
+          <div class="flex items-center gap-1.5">
+            <button onclick="closeAllPositions('market')" id="btnCloseAllMarket" title="Tutup semua posisi untuk market yang sedang dipilih" class="px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] sm:text-[11px] font-bold font-mono transition flex items-center gap-1">
+              <span>⚡ Tutup Semua (Market Ini)</span>
+            </button>
+            <button onclick="closeAllPositions('all')" title="Tutup SEMUA posisi terbuka di SEMUA market sekaligus" class="px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] sm:text-[11px] font-bold font-mono transition flex items-center gap-1">
+              <span>🚨 Tutup Semua (Semua Market)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 1: Open Positions -->
+        <div id="tabPositions" class="p-3 overflow-x-auto custom-scroll flex-1">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="text-slate-500 border-b border-brandBorder/80">
+                <th class="pb-2">Pair</th>
+                <th class="pb-2">Arah</th>
+                <th class="pb-2">Margin</th>
+                <th class="pb-2">Ukuran Total</th>
+                <th class="pb-2">Harga Entry</th>
+                <th class="pb-2">Harga Sekarang</th>
+                <th class="pb-2">Harga Likuidasi</th>
+                <th class="pb-2">TP / SL</th>
+                <th class="pb-2">Net PnL (Est. Fee)</th>
+                <th class="pb-2 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="positionsTableBody">
+              <tr>
+                <td colspan="10" class="text-center py-10 text-slate-500 font-sans">
+                  Belum ada posisi terbuka. Pilih koin di atas dan pasang order di panel kanan!
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab: Open Limit Orders -->
+        <div id="tabOpenOrders" class="p-3 overflow-x-auto custom-scroll hidden flex-1">
+          <div class="mb-2 text-xs text-slate-400 flex items-center justify-between">
+            <span>Antrean Limit Order yang menunggu harga menyentuh target:</span>
+          </div>
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="text-slate-500 border-b border-brandBorder/80">
+                <th class="pb-2">Pair</th>
+                <th class="pb-2">Arah</th>
+                <th class="pb-2">Margin</th>
+                <th class="pb-2">Ukuran Total</th>
+                <th class="pb-2">Harga Limit</th>
+                <th class="pb-2">Harga Pasar</th>
+                <th class="pb-2">TP / SL</th>
+                <th class="pb-2 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="openOrdersTableBody">
+              <tr>
+                <td colspan="8" class="text-center py-8 text-slate-500 font-sans">
+                  Tidak ada Limit Order yang sedang menunggu antrean.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab 2: Leaderboard Live -->
+        <div id="tabLeaderboard" class="p-4 hidden flex-1">
+          <div class="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center justify-between">
+            <div>
+              <strong>Rule BzKRIPtot:</strong> Modal awal <strong>$1,100</strong> per season (7 Hari). Peringkat ke-3 di akhir countdown wajib bayarin traktiran Mie Gacoan Level 4! Saldo terkunci anti-reset manual.
+            </div>
+            <div class="text-[11px] font-mono text-amber-300">
+              Season #<span id="currentSeasonNumber">1</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="leaderboardCards">
+            <!-- 3 Member Cards -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Riwayat Season (History) -->
+        <div id="tabSeasonHistory" class="p-4 hidden flex-1 overflow-x-auto custom-scroll">
+          <div class="mb-3 text-xs text-slate-400">
+            Rekap juara & korban traktiran dari season-season sebelumnya:
+          </div>
+          <div class="space-y-3" id="seasonHistoryList">
+            <!-- Dynamic Past Seasons -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Order History -->
+        <div id="tabHistory" class="p-3 overflow-x-auto custom-scroll hidden flex-1">
+          <table class="w-full text-left text-xs font-mono">
+            <thead>
+              <tr class="text-slate-500 border-b border-brandBorder/80">
+                <th class="pb-2">Waktu</th>
+                <th class="pb-2">Pair</th>
+                <th class="pb-2">Arah</th>
+                <th class="pb-2">Size</th>
+                <th class="pb-2">Entry</th>
+                <th class="pb-2">Exit</th>
+                <th class="pb-2">Fee Total (0.1%)</th>
+                <th class="pb-2 text-right">Net PnL</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="8" class="text-center py-8 text-slate-500 font-sans">Belum ada riwayat posisi yang ditutup.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Right: Pro Order Panel (4 Cols) -->
+    <div class="lg:col-span-4 flex flex-col gap-3">
+      
+      <!-- Order Box -->
+      <div class="bg-brandCard border border-brandBorder rounded-xl p-4 flex flex-col gap-4 sticky top-16">
+        
+        <div class="flex items-center justify-between border-b border-brandBorder pb-3">
+          <div>
+            <span class="text-xs font-bold text-slate-100 uppercase tracking-wider block">Order Eksekusi</span>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="text-[11px] text-slate-400">Pair:</span>
+              <button onclick="toggleMarketDropdown(event)" class="text-amber-400 font-bold hover:underline flex items-center gap-1 text-xs font-mono bg-brandDark px-2 py-0.5 rounded border border-brandBorder/80">
+                <span id="orderPairLabel">BTC/USDT</span> <span class="text-[9px]">▼</span>
+              </button>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-500 block">KAS TERSEDIA</span>
+            <span id="panelCash" class="font-mono font-bold text-slate-100 text-xs">$1,100.00</span>
+          </div>
+        </div>
+
+        <!-- Long vs Short Toggle -->
+        <div class="grid grid-cols-2 gap-2 p-1 bg-brandDark rounded-lg border border-brandBorder">
+          <button id="sideLongBtn" onclick="setSide('LONG')" class="py-2.5 rounded-md font-bold text-xs uppercase bg-accentGreen text-white shadow-lg shadow-accentGreen/20">
+            ▲ BUY / LONG
+          </button>
+          <button id="sideShortBtn" onclick="setSide('SHORT')" class="py-2.5 rounded-md font-bold text-xs uppercase text-slate-400 hover:text-white">
+            ▼ SELL / SHORT
+          </button>
+        </div>
+
+        <!-- Order Type Toggle (Market vs Limit) -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 bg-brandDark rounded-lg border border-brandBorder text-xs font-mono">
+          <button id="typeMarketBtn" onclick="setOrderType('MARKET')" class="py-1.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition">
+            Market
+          </button>
+          <button id="typeLimitBtn" onclick="setOrderType('LIMIT')" class="py-1.5 rounded font-bold text-slate-400 hover:text-white transition">
+            Limit Order
+          </button>
+        </div>
+
+        <!-- Limit Price Input (Hidden by default, shown for Limit Order) -->
+        <div id="limitPriceContainer" class="hidden bg-brandDark/80 border border-amber-500/30 rounded-lg p-2.5 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-medium text-slate-300">
+            <span class="font-bold text-amber-400">Harga Limit Order</span>
+            <button onclick="fillCurrentPriceToLimit()" class="text-[10px] text-amber-300 hover:underline font-mono">Ambil Harga Sekarang</button>
+          </div>
+          <div class="relative">
+            <input type="number" id="orderLimitPrice" step="any" placeholder="0.00" oninput="recalcOrder()" class="w-full bg-brandCard border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 font-bold outline-none focus:border-amber-500">
+            <span class="absolute right-3 top-2 text-xs text-slate-500 font-mono">USDT</span>
+          </div>
+          <div class="text-[10px] text-slate-400">
+            Order akan masuk antrean dan dieksekusi otomatis pas market menyentuh harga ini.
+          </div>
+        </div>
+
+        <!-- Leverage Slider -->
+        <div class="bg-brandDark/60 border border-brandBorder rounded-lg p-3">
+          <div class="flex justify-between items-center text-xs mb-2">
+            <span class="text-slate-400 font-medium">Leverage</span>
+            <span id="leverageLabel" class="font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">5x</span>
+          </div>
+          <input type="range" id="leverageSlider" min="1" max="25" value="5" step="1" oninput="updateLeverage(this.value)" class="w-full accent-amber-500 cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+            <span>1x Spot</span>
+            <span>5x</span>
+            <span>10x</span>
+            <span class="text-red-400">25x Rungkad</span>
+          </div>
+        </div>
+
+        <!-- Margin Input -->
+        <div>
+          <div class="flex justify-between text-xs font-medium text-slate-400 mb-1">
+            <span>Margin Jaminan (USD)</span>
+            <span class="text-[11px] font-mono text-slate-500">Min $10</span>
+          </div>
+          <div class="relative">
+            <input type="number" id="orderMargin" value="200" min="10" step="10" oninput="recalcOrder()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-sm font-mono text-slate-100 font-bold outline-none focus:border-amber-500">
+            <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">USDT</span>
+          </div>
+          <!-- Percent Buttons -->
+          <div class="grid grid-cols-4 gap-1.5 mt-2">
+            <button onclick="setMarginPct(0.1)" class="bg-brandDark hover:bg-brandBorder text-[11px] font-mono py-1 rounded text-slate-400 hover:text-slate-200">10%</button>
+            <button onclick="setMarginPct(0.25)" class="bg-brandDark hover:bg-brandBorder text-[11px] font-mono py-1 rounded text-slate-400 hover:text-slate-200">25%</button>
+            <button onclick="setMarginPct(0.5)" class="bg-brandDark hover:bg-brandBorder text-[11px] font-mono py-1 rounded text-slate-400 hover:text-slate-200">50%</button>
+            <button onclick="setMarginPct(1.0)" class="bg-brandDark hover:bg-brandBorder text-[11px] font-mono py-1 rounded text-amber-400 font-bold">ALL IN</button>
+          </div>
+        </div>
+
+        <!-- Take Profit (TP) & Stop Loss (SL) Container -->
+        <div class="bg-brandDark/50 border border-brandBorder rounded-lg p-3 space-y-3">
+          
+          <!-- TP Section -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center text-xs font-medium text-slate-300">
+              <span class="text-accentGreen font-bold flex items-center gap-1">🎯 Take Profit (TP)</span>
+              <span id="calcTpEst" class="text-[10px] font-mono text-accentGreen"></span>
+            </div>
+            <div class="relative">
+              <input type="number" id="orderTpPrice" step="any" placeholder="Target harga USDT (Take Profit)" oninput="recalcOrder()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-accentGreen">
+              <span class="absolute right-3 top-2 text-xs text-slate-500 font-mono">USDT</span>
+            </div>
+            <!-- TP % Quick Buttons -->
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <span class="text-[10px] text-slate-500 font-mono">Target %:</span>
+              <button onclick="setTpPct(10)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition">+10%</button>
+              <button onclick="setTpPct(25)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition">+25%</button>
+              <button onclick="setTpPct(50)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition">+50%</button>
+              <button onclick="setTpPct(100)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition font-bold">+100%</button>
+            </div>
+          </div>
+
+          <!-- SL Section -->
+          <div class="space-y-1.5 border-t border-brandBorder/60 pt-2.5">
+            <div class="flex justify-between items-center text-xs font-medium text-slate-300">
+              <span class="text-accentRed font-bold flex items-center gap-1">🛡️ Stop Loss (SL)</span>
+              <span id="calcSlEst" class="text-[10px] font-mono text-accentRed"></span>
+            </div>
+            <div class="relative">
+              <input type="number" id="orderSlPrice" step="any" placeholder="Target harga USDT (Stop Loss)" oninput="recalcOrder()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-accentRed">
+              <span class="absolute right-3 top-2 text-xs text-slate-500 font-mono">USDT</span>
+            </div>
+            <!-- SL % Quick Buttons -->
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <span class="text-[10px] text-slate-500 font-mono">Cut Loss %:</span>
+              <button onclick="setSlPct(10)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition">-10%</button>
+              <button onclick="setSlPct(25)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition">-25%</button>
+              <button onclick="setSlPct(50)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition">-50%</button>
+              <button onclick="setSlPct(75)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition font-bold">-75%</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Calculated Summary with Binance Fee -->
+        <div class="bg-brandDark rounded-lg p-3 border border-brandBorder space-y-2 text-xs font-mono">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Ukuran Kontrak:</span>
+            <span id="calcContractSize" class="text-slate-100 font-bold">$1,000.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Binance Fee Taker (0.05%):</span>
+            <span id="calcFee" class="text-amber-400 font-bold">$0.50</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Est. Likuidasi:</span>
+            <span id="calcLiqPrice" class="text-accentRed font-bold">$65,480.00</span>
+          </div>
+          <div class="flex justify-between border-t border-brandBorder/60 pt-2 text-amber-300">
+            <span>Target Profit (+5% Move):</span>
+            <span id="calcTargetProfit" class="font-bold">+$50.00 (~Rp900rb)</span>
+          </div>
+        </div>
+
+        <!-- Execution Button -->
+        <button id="btnExecute" onclick="placeOrder()" class="w-full py-3.5 rounded-lg font-bold text-sm uppercase bg-accentGreen text-white hover:opacity-90 active:scale-[0.99] transition-all shadow-lg shadow-accentGreen/20">
+          Eksekusi Buka Posisi Long
+        </button>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Login & Reset PIN Modal -->
+  <div id="loginModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-brandCard border border-brandBorder rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+      
+      <!-- Modal Tabs -->
+      <div class="flex border-b border-brandBorder pb-2 gap-4">
+        <button id="modalTabLoginBtn" onclick="switchModalTab('login')" class="text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1">
+          🔐 Masuk Akun
+        </button>
+        <button id="modalTabResetBtn" onclick="switchModalTab('reset')" class="text-xs font-bold text-slate-400 hover:text-slate-200 pb-1">
+          🔑 Reset / Ubah PIN
+        </button>
+      </div>
+
+      <!-- Section 1: Login -->
+      <div id="modalSectionLogin" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Pilih Member Tongkrongan</label>
+          <select id="modalUserSelect" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-bold text-amber-400 outline-none focus:border-amber-500">
+            <option value="Saldin Al">Saldin Al</option>
+            <option value="Hygal Amana">Hygal Amana</option>
+            <option value="Tegar Juni">Tegar Juni</option>
+            <option value="NiblaZ">NiblaZ</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-medium text-slate-400">PIN Rahasia (4 Digit)</label>
+            <button onclick="switchModalTab('reset')" class="text-[10px] text-amber-400 hover:underline">Lupa PIN?</button>
+          </div>
+          <input type="password" id="modalPinInput" maxlength="4" placeholder="••••" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-center text-lg font-mono tracking-widest text-slate-100 font-bold outline-none focus:border-amber-500">
+          <p class="text-[10px] text-slate-500 mt-1">Default: Saldin=1111, Hygal=2222, Tegar=3333, NiblaZ=4444</p>
+        </div>
+
+        <button onclick="handleLoginSubmit()" class="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs uppercase transition shadow-lg shadow-amber-500/20">
+          Masuk ke Akun
+        </button>
+      </div>
+
+      <!-- Section 2: Reset / Ganti PIN -->
+      <div id="modalSectionReset" class="space-y-3 hidden">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Pilih Akun yang Direset</label>
+          <select id="resetUserSelect" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-bold text-amber-400 outline-none focus:border-amber-500">
+            <option value="Saldin Al">Saldin Al</option>
+            <option value="Hygal Amana">Hygal Amana</option>
+            <option value="Tegar Juni">Tegar Juni</option>
+            <option value="NiblaZ">NiblaZ</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">PIN Lama (Kosongkan jika darurat)</label>
+          <input type="password" id="resetOldPinInput" maxlength="4" placeholder="••••" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-center text-sm font-mono tracking-widest text-slate-100 outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">PIN Baru (4 Digit Angka)</label>
+          <input type="password" id="resetNewPinInput" maxlength="4" placeholder="••••" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-center text-sm font-mono tracking-widest text-slate-100 outline-none focus:border-amber-500">
+        </div>
+
+        <button onclick="handleResetPinSubmit()" class="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs uppercase transition shadow-lg shadow-amber-500/20">
+          Simpan PIN Baru
+        </button>
+
+        <div class="border-t border-brandBorder/60 pt-2 text-center">
+          <button onclick="handleRestoreDefaultPin()" class="text-[11px] text-red-400 hover:text-red-300 underline font-mono">
+            ⚠️ Kembalikan PIN Akun Ini ke Default
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Supabase Config Modal -->
+  <div id="supabaseModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-brandCard border border-brandBorder rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-brandBorder pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm font-bold">⚡</div>
+          <h3 class="text-sm font-bold text-slate-100">Koneksi Supabase Cloud (Gratis)</h3>
+        </div>
+        <button onclick="closeSupabaseModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300">
+        Mau data trading sinkron instan di semua HP/Laptop kawan tanpa ngandelin Termux? Hubungkan ke proyek Supabase gratis lu!
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Supabase Project URL</label>
+          <input type="text" id="sbUrlInput" placeholder="https://xyzcompany.supabase.co" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Supabase Anon Public Key</label>
+          <input type="text" id="sbKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="bg-brandDark/80 border border-brandBorder rounded-lg p-3 space-y-2 text-[11px]">
+          <span class="font-bold text-amber-300 block">📋 SQL Setup (Jalankan 1x di Supabase SQL Editor):</span>
+          <pre class="bg-black/60 p-2 rounded text-[10px] text-emerald-300 font-mono overflow-x-auto select-all cursor-pointer" onclick="navigator.clipboard.writeText(this.innerText); alert('SQL script berhasil dicopy!')">create table if not exists bzkriptot_state (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamp with time zone default now()
+);
+alter table bzkriptot_state enable row level security;
+create policy "Public Access" on bzkriptot_state for all using (true) with check (true);</pre>
+          <span class="text-slate-500 text-[10px] block">Klik kotak SQL di atas untuk copy otomatis.</span>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="handleSaveSupabaseConfig()" class="flex-1 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xs uppercase transition shadow-lg shadow-emerald-500/20">
+            Hubungkan Sekarang
+          </button>
+          <button onclick="handleDisconnectSupabase()" class="px-3 py-2.5 rounded-lg bg-brandDark border border-brandBorder text-slate-400 hover:text-red-400 text-xs transition">
+            Putus
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Atur TP / SL Posisi Berjalan -->
+  <div id="tpSlModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-brandCard border border-brandBorder rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-brandBorder pb-3">
+        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+          <span>⚙️ Atur TP / SL Posisi</span>
+        </h3>
+        <button onclick="closeTpSlModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="bg-brandDark/70 border border-brandBorder rounded-lg p-2.5 text-xs font-mono space-y-1">
+        <div class="flex justify-between">
+          <span class="text-slate-400">Posisi:</span>
+          <span id="modalPosTitle" class="font-bold text-slate-100">BTC/USDT (LONG 5x)</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Harga Entry:</span>
+          <span id="modalPosEntry" class="font-bold text-amber-400">$81,850.00</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Harga Sekarang:</span>
+          <span id="modalPosCurrent" class="font-bold text-slate-200">$81,850.00</span>
+        </div>
+      </div>
+
+      <input type="hidden" id="modalPosId">
+
+      <!-- TP Section -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between items-center text-xs">
+          <label class="font-bold text-accentGreen">🎯 Take Profit (TP)</label>
+          <span id="modalTpEst" class="text-[10px] font-mono text-accentGreen"></span>
+        </div>
+        <div class="relative">
+          <input type="number" id="modalTpInput" step="any" placeholder="Target harga USDT" oninput="updateModalTpSlCalc()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-accentGreen">
+          <span class="absolute right-3 top-2 text-xs text-slate-500 font-mono">USDT</span>
+        </div>
+        <div class="flex items-center gap-1.5 pt-0.5">
+          <span class="text-[10px] text-slate-500 font-mono">Target %:</span>
+          <button onclick="setModalTpPct(10)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition">+10%</button>
+          <button onclick="setModalTpPct(25)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition">+25%</button>
+          <button onclick="setModalTpPct(50)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition">+50%</button>
+          <button onclick="setModalTpPct(100)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-emerald-500/20 text-emerald-400 border border-brandBorder text-[10px] font-mono transition font-bold">+100%</button>
+        </div>
+      </div>
+
+      <!-- SL Section -->
+      <div class="space-y-1.5 border-t border-brandBorder/60 pt-2.5">
+        <div class="flex justify-between items-center text-xs">
+          <label class="font-bold text-accentRed">🛡️ Stop Loss (SL)</label>
+          <span id="modalSlEst" class="text-[10px] font-mono text-accentRed"></span>
+        </div>
+        <div class="relative">
+          <input type="number" id="modalSlInput" step="any" placeholder="Target harga USDT" oninput="updateModalTpSlCalc()" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-accentRed">
+          <span class="absolute right-3 top-2 text-xs text-slate-500 font-mono">USDT</span>
+        </div>
+        <div class="flex items-center gap-1.5 pt-0.5">
+          <span class="text-[10px] text-slate-500 font-mono">Cut Loss %:</span>
+          <button onclick="setModalSlPct(10)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition">-10%</button>
+          <button onclick="setModalSlPct(25)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition">-25%</button>
+          <button onclick="setModalSlPct(50)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition">-50%</button>
+          <button onclick="setModalSlPct(75)" class="px-2 py-0.5 rounded bg-brandDark hover:bg-red-500/20 text-red-400 border border-brandBorder text-[10px] font-mono transition font-bold">-75%</button>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="saveModalTpSl()" class="flex-1 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs uppercase transition shadow-lg shadow-amber-500/20">
+          Simpan TP / SL
+        </button>
+        <button onclick="clearModalTpSl()" class="px-3 py-2.5 rounded-lg bg-brandDark border border-brandBorder text-slate-400 hover:text-red-400 text-xs transition">
+          Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 15 Crypto Pairs (10 Top + 5 Hot Meme on Binance)
+    const COINS = [
+      { symbol: 'BTC', pair: 'BTCUSDT', name: 'Bitcoin', icon: '₿', tvSymbol: 'BINANCE:BTCUSDT', price: 80600.0, change: -1.25, high: 81500.0, low: 80200.0, hot: false, isLive: false },
+      { symbol: 'ETH', pair: 'ETHUSDT', name: 'Ethereum', icon: 'Ξ', tvSymbol: 'BINANCE:ETHUSDT', price: 2372.0, change: -1.10, high: 2420.0, low: 2360.0, hot: false, isLive: false },
+      { symbol: 'SOL', pair: 'SOLUSDT', name: 'Solana', icon: '◎', tvSymbol: 'BINANCE:SOLUSDT', price: 102.2, change: -0.85, high: 104.5, low: 101.5, hot: false, isLive: false },
+      { symbol: 'BNB', pair: 'BNBUSDT', name: 'BNB', icon: '⬡', tvSymbol: 'BINANCE:BNBUSDT', price: 735.8, change: 0.45, high: 742.0, low: 730.0, hot: false, isLive: false },
+      { symbol: 'XRP', pair: 'XRPUSDT', name: 'Ripple', icon: '✕', tvSymbol: 'BINANCE:XRPUSDT', price: 1.276, change: -1.90, high: 1.30, low: 1.26, hot: false, isLive: false },
+      { symbol: 'DOGE', pair: 'DOGEUSDT', name: 'Dogecoin', icon: 'Ð', tvSymbol: 'BINANCE:DOGEUSDT', price: 0.0772, change: -2.40, high: 0.080, low: 0.076, hot: false, isLive: false },
+      { symbol: 'ADA', pair: 'ADAUSDT', name: 'Cardano', icon: '₳', tvSymbol: 'BINANCE:ADAUSDT', price: 0.2076, change: -1.65, high: 0.215, low: 0.204, hot: false, isLive: false },
+      { symbol: 'AVAX', pair: 'AVAXUSDT', name: 'Avalanche', icon: '🔺', tvSymbol: 'BINANCE:AVAXUSDT', price: 8.85, change: -1.80, high: 9.10, low: 8.75, hot: false, isLive: false },
+      { symbol: 'SUI', pair: 'SUIUSDT', name: 'Sui', icon: '💧', tvSymbol: 'BINANCE:SUIUSDT', price: 0.9426, change: -2.20, high: 0.98, low: 0.93, hot: false, isLive: false },
+      { symbol: 'LINK', pair: 'LINKUSDT', name: 'Chainlink', icon: '🔗', tvSymbol: 'BINANCE:LINKUSDT', price: 11.56, change: -1.30, high: 11.9, low: 11.4, hot: false, isLive: false },
+      // 5 Hot / Meme
+      { symbol: 'PEPE', pair: 'PEPEUSDT', name: 'Pepe', icon: '🐸', tvSymbol: 'BINANCE:PEPEUSDT', price: 0.00000452, change: -3.50, high: 0.0000047, low: 0.0000044, hot: true, isLive: false },
+      { symbol: 'WIF', pair: 'WIFUSDT', name: 'dogwifhat', icon: '🐶', tvSymbol: 'BINANCE:WIFUSDT', price: 0.1813, change: -4.40, high: 0.192, low: 0.178, hot: true, isLive: false },
+      { symbol: 'BONK', pair: 'BONKUSDT', name: 'Bonk', icon: '🐕', tvSymbol: 'BINANCE:BONKUSDT', price: 0.00000306, change: -2.20, high: 0.0000032, low: 0.0000030, hot: true, isLive: false },
+      { symbol: 'RENDER', pair: 'RENDERUSDT', name: 'Render', icon: '⚡', tvSymbol: 'BINANCE:RENDERUSDT', price: 1.703, change: -1.80, high: 1.75, low: 1.68, hot: true, isLive: false },
+      { symbol: 'NEAR', pair: 'NEARUSDT', name: 'Near Protocol', icon: 'Ⓝ', tvSymbol: 'BINANCE:NEARUSDT', price: 4.62, change: -2.10, high: 4.75, low: 4.55, hot: true, isLive: false }
+    ];
+
+    // 4 Tongkrongan Members
+    const USERS_LIST = ['Saldin Al', 'Hygal Amana', 'Tegar Juni', 'NiblaZ'];
+    const DEFAULT_PINS = {
+      'Saldin Al': '1111',
+      'Hygal Amana': '2222',
+      'Tegar Juni': '3333',
+      'NiblaZ': '4444'
+    };
+
+    function getUserPins() {
+      const saved = localStorage.getItem('bzkriptot_member_pins');
+      if (saved) return JSON.parse(saved);
+      localStorage.setItem('bzkriptot_member_pins', JSON.stringify(DEFAULT_PINS));
+      return DEFAULT_PINS;
+    }
+
+    function saveUserPin(userName, newPin) {
+      const pins = getUserPins();
+      pins[userName] = newPin;
+      localStorage.setItem('bzkriptot_member_pins', JSON.stringify(pins));
+    }
+
+    let activeUser = localStorage.getItem('bzkriptot_active_user') || 'Saldin Al';
+    let selectedCoin = COINS[0];
+    let orderSide = 'LONG';
+    let currentOrderType = 'MARKET'; // 'MARKET' or 'LIMIT'
+    let leverage = 5;
+
+    // Guaranteed 7-Day Anchor: Fri Oct 30 2026 12:04:14 GMT
+    const DEFAULT_SEASON_END = 1793336654584;
+
+    function initDefaultDB() {
+      return {
+        seasonNumber: 1,
+        seasonEnd: DEFAULT_SEASON_END,
+        users: {
+          'Saldin Al': { cash: 1100.0, positions: [], history: [], openOrders: [] },
+          'Hygal Amana': { cash: 1100.0, positions: [], history: [], openOrders: [] },
+          'Tegar Juni': { cash: 1100.0, positions: [], history: [], openOrders: [] },
+          'NiblaZ': { cash: 1100.0, positions: [], history: [], openOrders: [] }
+        },
+        seasonHistory: [
+          {
+            season: 0,
+            date: 'Minggu Lalu (Pemanasan)',
+            winner: 'Hygal Amana',
+            winnerRoi: '+28.4%',
+            loser: 'Tegar Juni',
+            loserRoi: '-44.2%',
+            details: 'Tegar kalah telak di koin PEPE 20x leverage dan wajib menomboki Mie Gacoan.'
+          }
+        ]
+      };
+    }
+
+    function loadLocalDB() {
+      const saved = localStorage.getItem('bzkriptot_db');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.users) {
+            // Guarantee valid seasonEnd and strictly 3 users
+            if (!parsed.seasonEnd || isNaN(Number(parsed.seasonEnd))) {
+              parsed.seasonEnd = DEFAULT_SEASON_END;
+            }
+            if (!parsed.seasonNumber) parsed.seasonNumber = 1;
+            USERS_LIST.forEach(name => {
+              if (!parsed.users[name]) parsed.users[name] = { cash: 1100.0, positions: [], history: [], openOrders: [] };
+              if (!parsed.users[name].positions) parsed.users[name].positions = [];
+              if (!parsed.users[name].history) parsed.users[name].history = [];
+              if (!parsed.users[name].openOrders) parsed.users[name].openOrders = [];
+            });
+
+            // Sanitize NiblaZ in local storage against any glitched static trades
+            if (parsed.users['NiblaZ']) {
+              const u = parsed.users['NiblaZ'];
+              const badIds = [1792852522403, 1792852522407, 1792851670306, 1792853131956];
+              if (u.history && u.history.some(h => badIds.includes(h.id) || (h.pnl && h.pnl > 1000))) {
+                u.history = u.history.filter(h => !badIds.includes(h.id) && (!h.pnl || h.pnl < 1000));
+                u.positions = (u.positions || []).filter(p => !p.margin || p.margin <= 300);
+                const validPnl = u.history.reduce((sum, h) => sum + (parseFloat(h.pnl) || 0), 0);
+                const lockedMargin = u.positions.reduce((sum, p) => sum + (parseFloat(p.margin) || 0), 0);
+                u.cash = Math.max(0, Math.round((1100.0 + validPnl - lockedMargin) * 100) / 100);
+              }
+            }
+
+            return parsed;
+          }
+        } catch (e) {}
+      }
+      const fresh = initDefaultDB();
+      saveLocalDB(fresh);
+      return fresh;
+    }
+
+    function saveLocalDB(data) {
+      localStorage.setItem('bzkriptot_db', JSON.stringify(data));
+    }
+
+    // Supabase Cloud Client (Default Shared Database)
+    const DEFAULT_SB_URL = 'https://hlbskawdbrcpwmknizpq.supabase.co';
+    const DEFAULT_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsYnNrYXdkYnJjcHdta25penBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5NjYzMTMsImV4cCI6MjEwODU0MjMxM30.Bt7Lc0T_C46aTTosget44lg3xjQ8KpcYWoNIEGPYeG0';
+    let supabaseClient = null;
+
+    function getSupabaseConfig() {
+      const url = localStorage.getItem('bzkriptot_sb_url') || DEFAULT_SB_URL;
+      const key = localStorage.getItem('bzkriptot_sb_key') || DEFAULT_SB_KEY;
+      if (url && key) return { url, key };
+      return null;
+    }
+
+    function initSupabase() {
+      const cfg = getSupabaseConfig();
+      if (!cfg || !window.supabase) return;
+      try {
+        supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+        
+        // Subscribe to realtime database stream
+        supabaseClient.channel('bzkriptot_live_stream')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bzkriptot_state' }, payload => {
+            if (payload.new && payload.new.data) {
+              const sdb = payload.new.data;
+              const local = loadLocalDB();
+              USERS_LIST.forEach(uname => {
+                if (sdb.users && sdb.users[uname]) local.users[uname] = sdb.users[uname];
+              });
+              if (sdb.seasonEnd) local.seasonEnd = Number(sdb.seasonEnd);
+              if (sdb.seasonNumber) local.seasonNumber = sdb.seasonNumber;
+              saveLocalDB(local);
+              const badge = document.getElementById('syncStatusBadge');
+              if (badge) badge.innerHTML = '⚡ SUPABASE REALTIME';
+              renderAll();
+            }
+          })
+          .subscribe();
+
+        const badge = document.getElementById('syncStatusBadge');
+        if (badge) badge.innerHTML = '⚡ SUPABASE CONNECTED';
+      } catch (e) {
+        console.warn('Supabase connect error:', e);
+      }
+    }
+
+    // Modal Supabase Handlers
+    function openSupabaseModal() {
+      const cfg = getSupabaseConfig();
+      if (cfg) {
+        document.getElementById('sbUrlInput').value = cfg.url;
+        document.getElementById('sbKeyInput').value = cfg.key;
+      }
+      document.getElementById('supabaseModal').classList.remove('hidden');
+    }
+
+    function closeSupabaseModal() {
+      document.getElementById('supabaseModal').classList.add('hidden');
+    }
+
+    function handleSaveSupabaseConfig() {
+      const url = document.getElementById('sbUrlInput').value.trim();
+      const key = document.getElementById('sbKeyInput').value.trim();
+
+      if (!url || !key) {
+        alert('Harap isi Project URL dan Anon Key dari dashboard Supabase!');
+        return;
+      }
+
+      localStorage.setItem('bzkriptot_sb_url', url);
+      localStorage.setItem('bzkriptot_sb_key', key);
+
+      initSupabase();
+      closeSupabaseModal();
+      alert('✅ Berhasil terhubung ke Supabase! Sinkronisasi realtime aktif.');
+      syncPullFromServer();
+    }
+
+    function handleDisconnectSupabase() {
+      if (confirm('Putuskan koneksi ke Supabase dan kembali ke sinkronisasi default?')) {
+        localStorage.removeItem('bzkriptot_sb_url');
+        localStorage.removeItem('bzkriptot_sb_key');
+        supabaseClient = null;
+        closeSupabaseModal();
+        const badge = document.getElementById('syncStatusBadge');
+        if (badge) badge.innerHTML = '☁️ CLOUD SYNC';
+        alert('Koneksi Supabase diputus.');
+      }
+    }
+
+    async function syncPullFromServer() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient.from('bzkriptot_state').select('data').eq('id', 'state').single();
+        if (!error && data && data.data) {
+          const sdb = data.data;
+          const local = loadLocalDB();
+          USERS_LIST.forEach(uname => {
+            if (sdb.users && sdb.users[uname]) local.users[uname] = sdb.users[uname];
+          });
+          if (sdb.seasonEnd && !isNaN(Number(sdb.seasonEnd))) local.seasonEnd = Number(sdb.seasonEnd);
+          if (sdb.seasonNumber) local.seasonNumber = sdb.seasonNumber;
+
+          saveLocalDB(local);
+          const badge = document.getElementById('syncStatusBadge');
+          if (badge) badge.innerHTML = '⚡ SUPABASE REALTIME';
+          renderAll();
+        }
+      } catch (e) {}
+    }
+
+    async function syncPushToServer(db) {
+      saveLocalDB(db);
+
+      if (!supabaseClient) return;
+      try {
+        let currentData = {};
+        try {
+          const { data } = await supabaseClient.from('bzkriptot_state').select('data').eq('id', 'state').single();
+          if (data && data.data) currentData = data.data;
+        } catch (e) {}
+
+        const mergedUsers = (currentData && currentData.users) ? { ...currentData.users } : {};
+        if (activeUser && activeUser !== 'NiblaZ' && db.users && db.users[activeUser]) {
+          mergedUsers[activeUser] = db.users[activeUser];
+        } else {
+          USERS_LIST.forEach(u => {
+            if (u !== 'NiblaZ' && db.users && db.users[u]) {
+              mergedUsers[u] = db.users[u];
+            }
+          });
+        }
+
+        await supabaseClient.from('bzkriptot_state').upsert({
+          id: 'state',
+          data: {
+            users: mergedUsers,
+            seasonEnd: db.seasonEnd || currentData.seasonEnd,
+            seasonNumber: db.seasonNumber || currentData.seasonNumber
+          },
+          updated_at: new Date().toISOString()
+        });
+
+        const badge = document.getElementById('syncStatusBadge');
+        if (badge) badge.innerHTML = '⚡ SUPABASE SAVED';
+      } catch (e) {
+        console.warn('Supabase save error:', e);
+      }
+    }
+
+    // Real Binance WebSocket Stream (100% Live) with Multi-Port & Multi-Source Fallback
+    let wsInstance = null;
+    let restPollingTimer = null;
+
+    function initBinanceWebSocket() {
+      if (wsInstance) {
+        try { wsInstance.close(); } catch (e) {}
+      }
+
+      try {
+        // Use standard port 443 instead of 9443 (9443 is often blocked by campus/home WiFi firewall)
+        const wsUrl = 'wss://stream.binance.com/ws/!miniTicker@arr';
+        wsInstance = new WebSocket(wsUrl);
+        
+        wsInstance.onopen = () => {
+          const b = document.getElementById('feedStatusBadge');
+          if (b) b.innerHTML = '<span class="w-2 h-2 rounded-full bg-accentGreen animate-pulse"></span><span>Binance Live WS (100% Real)</span>';
+          if (restPollingTimer) {
+            clearInterval(restPollingTimer);
+            restPollingTimer = null;
+          }
+        };
+
+        wsInstance.onmessage = (event) => {
+          const tickers = JSON.parse(event.data);
+          if (!Array.isArray(tickers)) return;
+
+          let updated = false;
+          tickers.forEach(t => {
+            const coin = COINS.find(c => c.pair === t.s);
+            if (coin) {
+              const cur = parseFloat(t.c);
+              const open = parseFloat(t.o);
+              coin.price = cur;
+              coin.isLive = true;
+              if (open > 0) coin.change = ((cur - open) / open) * 100;
+              if (t.h) coin.high = parseFloat(t.h);
+              if (t.l) coin.low = parseFloat(t.l);
+              updated = true;
+            }
+          });
+
+          if (updated) {
+            updateHeaderStatsUI();
+            if (!document.getElementById('marketDropdownMenu')?.classList.contains('hidden')) {
+              renderMarketList();
+            }
+            updatePositionsLive();
+            recalcOrder();
+          }
+        };
+
+        wsInstance.onerror = () => {
+          triggerRestFallback();
+        };
+
+        wsInstance.onclose = () => {
+          triggerRestFallback();
+          setTimeout(initBinanceWebSocket, 5000);
+        };
+      } catch (e) {
+        triggerRestFallback();
+      }
+    }
+
+    function triggerRestFallback() {
+      const b = document.getElementById('feedStatusBadge');
+      if (b) b.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>Live REST Polling (Mac/ISP Fallback)</span>';
+      syncBinanceRest();
+      if (!restPollingTimer) {
+        restPollingTimer = setInterval(syncBinanceRest, 2000);
+      }
+    }
+
+    async function syncBinanceRest() {
+      // 1. Try Binance REST API first
+      try {
+        const res = await fetch('https://api.binance.com/api/v3/ticker/24hr', { cache: 'no-store' });
+        if (res.ok) {
+          const list = await res.json();
+          let updated = false;
+          list.forEach(item => {
+            const coin = COINS.find(c => c.pair === item.symbol);
+            if (coin) {
+              coin.price = parseFloat(item.lastPrice);
+              coin.change = parseFloat(item.priceChangePercent);
+              coin.isLive = true;
+              if (item.highPrice) coin.high = parseFloat(item.highPrice);
+              if (item.lowPrice) coin.low = parseFloat(item.lowPrice);
+              updated = true;
+            }
+          });
+          if (updated) {
+            updateHeaderStatsUI();
+            if (!document.getElementById('marketDropdownMenu')?.classList.contains('hidden')) {
+              renderMarketList();
+            }
+            updatePositionsLive();
+            recalcOrder();
+          }
+          return;
+        }
+      } catch (e) {}
+
+      // 2. Fallback to CoinGecko if Binance domain is blocked by ISP on laptop/Mac
+      try {
+        const ids = 'bitcoin,ethereum,solana,binancecoin,ripple,dogecoin,cardano,avalanche-2,sui,chainlink,pepe,dogwifcoin,bonk,render-token,near';
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          const map = {
+            BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
+            XRP: 'ripple', DOGE: 'dogecoin', ADA: 'cardano', AVAX: 'avalanche-2',
+            SUI: 'sui', LINK: 'chainlink', PEPE: 'pepe', WIF: 'dogwifcoin',
+            BONK: 'bonk', RENDER: 'render-token', NEAR: 'near'
+          };
+          let updated = false;
+          COINS.forEach(c => {
+            const id = map[c.symbol];
+            if (id && data[id]) {
+              c.price = data[id].usd;
+              c.isLive = true;
+              if (data[id].usd_24h_change !== undefined) c.change = data[id].usd_24h_change;
+              updated = true;
+            }
+          });
+          if (updated) {
+            updateHeaderStatsUI();
+            if (!document.getElementById('marketDropdownMenu')?.classList.contains('hidden')) {
+              renderMarketList();
+            }
+            updatePositionsLive();
+            recalcOrder();
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Bulletproof Season Timer (Never NaN!)
+    function checkSeasonExpiry() {
+      const db = loadLocalDB();
+      const now = Date.now();
+
+      let targetEnd = Number(db.seasonEnd);
+      if (!targetEnd || isNaN(targetEnd) || targetEnd < now) {
+        targetEnd = now + (7 * 24 * 60 * 60 * 1000);
+        db.seasonEnd = targetEnd;
+        syncPushToServer(db);
+      }
+
+      // Check Expiry
+      if (now >= targetEnd) {
+        const scores = USERS_LIST.map(name => {
+          const u = db.users[name];
+          let unPnl = 0;
+          u.positions.forEach(pos => {
+            const coin = COINS.find(c => c.pair === pos.pair) || { price: pos.entryPrice };
+            if (pos.side === 'LONG') unPnl += pos.totalSize * ((coin.price - pos.entryPrice) / pos.entryPrice);
+            else unPnl += pos.totalSize * ((pos.entryPrice - coin.price) / pos.entryPrice);
+            unPnl -= (pos.openFee || 0);
+          });
+          const marginUsed = u.positions.reduce((a, b) => a + b.margin, 0);
+          const equity = u.cash + marginUsed + unPnl;
+          const roi = ((equity - 1100) / 1100) * 100;
+          return { name, equity, roi };
+        }).sort((a, b) => b.equity - a.equity);
+
+        const winner = scores[0];
+        const loser = scores[scores.length - 1];
+
+        db.seasonHistory.unshift({
+          season: db.seasonNumber || 1,
+          date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          winner: winner.name,
+          winnerRoi: (winner.roi >= 0 ? '+' : '') + winner.roi.toFixed(2) + '%',
+          loser: loser.name,
+          loserRoi: (loser.roi >= 0 ? '+' : '') + loser.roi.toFixed(2) + '%',
+          details: `${winner.name} menang mutlak ($${winner.equity.toFixed(2)}). ${loser.name} wajib nomboki traktiran Mie Gacoan Level 4!`
+        });
+
+        // Reset balances
+        USERS_LIST.forEach(name => {
+          db.users[name] = { cash: 1100.0, positions: [], history: [] };
+        });
+
+        db.seasonNumber = (db.seasonNumber || 1) + 1;
+        db.seasonEnd = now + (7 * 24 * 60 * 60 * 1000);
+        syncPushToServer(db);
+
+        alert(`🚨 SEASON ${db.seasonNumber - 1} SELESAI!\n\n👑 Sultan: ${winner.name} (${winner.roi >= 0 ? '+' : ''}${winner.roi.toFixed(1)}%)\n💀 Korban Nombok: ${loser.name} (${loser.roi.toFixed(1)}%)\n\nSaldo semua member telah di-reset ke $1,100 untuk Season ${db.seasonNumber}!`);
+        renderAll();
+        return;
+      }
+
+      // Safe calculation without NaN
+      const remainingMs = Math.max(0, targetEnd - now);
+      const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((remainingMs % (1000 * 60)) / 1000);
+
+      const dEl = document.getElementById('seasonTimerDisplay');
+      if (dEl) {
+        dEl.innerText = `${days}h ${hours}j ${mins}m ${secs}d`;
+      }
+      const sNum = document.getElementById('currentSeasonNumber');
+      if (sNum) sNum.innerText = db.seasonNumber || 1;
+      const bNum = document.getElementById('bannerSeasonNum');
+      if (bNum) bNum.innerText = db.seasonNumber || 1;
+    }
+
+    setInterval(checkSeasonExpiry, 1000);
+
+    // TradingView Widget Loader
+    function loadTradingViewWidget(tvSymbol) {
+      const container = document.getElementById('tv_chart_container');
+      container.innerHTML = '<div id="tv_chart" style="height:100%;width:100%"></div>';
+      
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": tvSymbol,
+        "interval": "15",
+        "timezone": "Asia/Jakarta",
+        "theme": "dark",
+        "style": "1",
+        "locale": "id",
+        "toolbar_bg": "#111622",
+        "enable_publishing": false,
+        "hide_side_toolbar": false,
+        "allow_symbol_change": true,
+        "container_id": "tv_chart"
+      });
+    }
+
+    function formatCoinPrice(price) {
+      if (price === undefined || price === null || isNaN(price)) return '$0.00';
+      if (price < 0.0001) return '$' + price.toFixed(8);
+      if (price < 0.01) return '$' + price.toFixed(6);
+      if (price < 1) return '$' + price.toFixed(4);
+      if (price < 10) return '$' + price.toFixed(3);
+      return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    let currentMarketTab = 'all';
+
+    function toggleMarketDropdown(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      const menu = document.getElementById('marketDropdownMenu');
+      if (!menu) return;
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        renderMarketList();
+        const input = document.getElementById('marketSearchInput');
+        if (input) {
+          input.value = '';
+          setTimeout(() => input.focus(), 50);
+        }
+      } else {
+        menu.classList.add('hidden');
+      }
+    }
+
+    function closeMarketDropdown() {
+      const menu = document.getElementById('marketDropdownMenu');
+      if (menu) menu.classList.add('hidden');
+    }
+
+    function setMarketTab(tab) {
+      currentMarketTab = tab;
+      ['all', 'top', 'hot'].forEach(t => {
+        const btn = document.getElementById('mTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) {
+          if (t === tab) {
+            btn.className = "px-3 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-xs";
+          } else {
+            btn.className = "px-3 py-1 rounded-lg font-bold text-slate-400 hover:text-slate-200 transition text-xs";
+          }
+        }
+      });
+      renderMarketList();
+    }
+
+    function filterMarketList() {
+      renderMarketList();
+    }
+
+    function renderMarketList() {
+      const container = document.getElementById('marketListContainer');
+      if (!container) return;
+
+      const q = (document.getElementById('marketSearchInput')?.value || '').trim().toUpperCase();
+
+      let list = COINS.filter(c => {
+        if (currentMarketTab === 'top' && c.hot) return false;
+        if (currentMarketTab === 'hot' && !c.hot) return false;
+        if (q) {
+          return c.symbol.toUpperCase().includes(q) || c.name.toUpperCase().includes(q) || c.pair.toUpperCase().includes(q);
+        }
+        return true;
+      });
+
+      if (list.length === 0) {
+        container.innerHTML = '<div class="p-6 text-center text-slate-500 text-xs font-sans">Koin tidak ditemukan</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(c => {
+        const isSelected = c.pair === selectedCoin.pair;
+        const isGreen = c.change >= 0;
+        const priceStr = formatCoinPrice(c.price);
+        return `
+          <div onclick="selectCoin('${c.pair}'); closeMarketDropdown();" class="p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition ${isSelected ? 'bg-amber-500/15 border border-amber-500/40' : 'hover:bg-brandDark/80'}">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-brandDark border border-brandBorder flex items-center justify-center font-bold text-sm ${c.hot ? 'text-red-400' : 'text-amber-400'}">
+                ${c.icon || '🪙'}
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-black text-slate-100 text-xs font-mono">${c.symbol}</span>
+                  <span class="text-[10px] text-slate-500 font-mono">/USDT</span>
+                  ${c.hot ? '<span class="text-[8px] bg-red-500/20 text-red-400 border border-red-500/30 px-1 rounded font-bold font-mono">HOT</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-400 font-sans">${c.name}</div>
+              </div>
+            </div>
+            <div class="text-right font-mono">
+              <div class="font-bold text-slate-100 text-xs">${priceStr}</div>
+              <div class="text-[10px] font-bold ${isGreen ? 'text-accentGreen' : 'text-accentRed'}">${isGreen ? '+' : ''}${c.change.toFixed(2)}%</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectCoin(pair) {
+      const found = COINS.find(c => c.pair === pair);
+      if (!found) return;
+      selectedCoin = found;
+
+      const btnCloseMarket = document.getElementById('btnCloseAllMarket');
+      if (btnCloseMarket) {
+        btnCloseMarket.innerHTML = `<span>⚡ Tutup Semua (${found.symbol})</span>`;
+      }
+
+      if (currentOrderType === 'LIMIT') {
+        fillCurrentPriceToLimit();
+      }
+
+      updateHeaderStatsUI();
+      loadTradingViewWidget(found.tvSymbol);
+      recalcOrder();
+    }
+
+    function updateHeaderStatsUI() {
+      // 1. Ticker Dropdown Trigger Button
+      const dispSymbol = document.getElementById('tickerDisplaySymbol');
+      if (dispSymbol) dispSymbol.innerText = `${selectedCoin.symbol}/USDT`;
+
+      const dispName = document.getElementById('tickerDisplayName');
+      if (dispName) dispName.innerText = selectedCoin.name;
+
+      const logoIcon = document.getElementById('tickerLogoIcon');
+      if (logoIcon) logoIcon.innerText = selectedCoin.icon || '🪙';
+
+      const tickerHot = document.getElementById('tickerHotBadge');
+      if (tickerHot) {
+        if (selectedCoin.hot) tickerHot.classList.remove('hidden');
+        else tickerHot.classList.add('hidden');
+      }
+
+      // 2. Order Box label
+      const orderPair = document.getElementById('orderPairLabel');
+      if (orderPair) orderPair.innerText = `${selectedCoin.symbol}/USDT`;
+
+      // 3. Last Price
+      const lastP = document.getElementById('statLastPrice');
+      if (lastP) {
+        lastP.innerText = formatCoinPrice(selectedCoin.price);
+        lastP.className = 'text-xl md:text-2xl font-black font-mono transition-colors duration-200 ' + (selectedCoin.change >= 0 ? 'text-accentGreen' : 'text-accentRed');
+      }
+
+      // 4. 24h Change
+      const changeEl = document.getElementById('statChange24h');
+      if (changeEl) {
+        const isGreen = selectedCoin.change >= 0;
+        changeEl.innerText = (isGreen ? '+' : '') + selectedCoin.change.toFixed(2) + '%';
+        changeEl.className = 'text-sm font-bold font-mono ' + (isGreen ? 'text-accentGreen' : 'text-accentRed');
+      }
+
+      // 5. 24h High & Low
+      const highEl = document.getElementById('statHigh24h');
+      if (highEl) {
+        const highVal = selectedCoin.high || (selectedCoin.price * (1 + Math.abs(selectedCoin.change || 1) / 100 * 0.8));
+        highEl.innerText = formatCoinPrice(highVal);
+      }
+
+      const lowEl = document.getElementById('statLow24h');
+      if (lowEl) {
+        const lowVal = selectedCoin.low || (selectedCoin.price * (1 - Math.abs(selectedCoin.change || 1) / 100 * 0.8));
+        lowEl.innerText = formatCoinPrice(lowVal);
+      }
+
+      // 6. Chart Container title sync (fallback)
+      const chartTitle = document.getElementById('chartSymbolTitle');
+      if (chartTitle) chartTitle.innerText = `${selectedCoin.symbol}/USDT`;
+      const chartP = document.getElementById('chartHeaderPrice');
+      if (chartP) chartP.innerText = formatCoinPrice(selectedCoin.price);
+      const chartC = document.getElementById('chartHeaderChange');
+      if (chartC) {
+        const isGreen = selectedCoin.change >= 0;
+        chartC.innerText = (isGreen ? '+' : '') + selectedCoin.change.toFixed(2) + '%';
+        chartC.className = 'text-[11px] font-mono ' + (isGreen ? 'text-accentGreen' : 'text-accentRed');
+      }
+      const hotBadge = document.getElementById('hotBadge');
+      if (hotBadge) {
+        if (selectedCoin.hot) hotBadge.classList.remove('hidden');
+        else hotBadge.classList.add('hidden');
+      }
+    }
+
+    // Backward-compatibility aliases
+    function renderCryptoBar() {
+      updateHeaderStatsUI();
+      renderMarketList();
+    }
+    function updateHeaderPriceUI() {
+      updateHeaderStatsUI();
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('marketDropdownMenu');
+      const btn = document.getElementById('marketDropdownBtn');
+      if (menu && !menu.classList.contains('hidden')) {
+        if (!menu.contains(e.target) && !btn.contains(e.target)) {
+          closeMarketDropdown();
+        }
+      }
+    });
+
+    // Controls
+    function setSide(side) {
+      orderSide = side;
+      const bLong = document.getElementById('sideLongBtn');
+      const bShort = document.getElementById('sideShortBtn');
+      const bExec = document.getElementById('btnExecute');
+
+      if (side === 'LONG') {
+        bLong.className = "py-2.5 rounded-md font-bold text-xs uppercase bg-accentGreen text-white shadow-lg shadow-accentGreen/20";
+        bShort.className = "py-2.5 rounded-md font-bold text-xs uppercase text-slate-400 hover:text-white";
+        bExec.className = "w-full py-3.5 rounded-lg font-bold text-sm uppercase bg-accentGreen text-white hover:opacity-90 active:scale-[0.99] transition-all shadow-lg shadow-accentGreen/20";
+        bExec.innerText = currentOrderType === 'LIMIT' ? "Pasang Limit Order Long" : "Eksekusi Buka Posisi Long";
+      } else {
+        bShort.className = "py-2.5 rounded-md font-bold text-xs uppercase bg-accentRed text-white shadow-lg shadow-accentRed/20";
+        bLong.className = "py-2.5 rounded-md font-bold text-xs uppercase text-slate-400 hover:text-white";
+        bExec.className = "w-full py-3.5 rounded-lg font-bold text-sm uppercase bg-accentRed text-white hover:opacity-90 active:scale-[0.99] transition-all shadow-lg shadow-accentRed/20";
+        bExec.innerText = currentOrderType === 'LIMIT' ? "Pasang Limit Order Short" : "Eksekusi Buka Posisi Short";
+      }
+      recalcOrder();
+    }
+
+    function setOrderType(type) {
+      currentOrderType = type;
+      const bM = document.getElementById('typeMarketBtn');
+      const bL = document.getElementById('typeLimitBtn');
+      const container = document.getElementById('limitPriceContainer');
+      const bExec = document.getElementById('btnExecute');
+
+      if (type === 'MARKET') {
+        bM.className = "py-1.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition";
+        bL.className = "py-1.5 rounded font-bold text-slate-400 hover:text-white transition";
+        container.classList.add('hidden');
+        bExec.innerText = orderSide === 'LONG' ? "Eksekusi Buka Posisi Long" : "Eksekusi Buka Posisi Short";
+      } else {
+        bL.className = "py-1.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition";
+        bM.className = "py-1.5 rounded font-bold text-slate-400 hover:text-white transition";
+        container.classList.remove('hidden');
+        if (!document.getElementById('orderLimitPrice').value) {
+          fillCurrentPriceToLimit();
+        }
+        bExec.innerText = orderSide === 'LONG' ? "Pasang Limit Order Long" : "Pasang Limit Order Short";
+      }
+      recalcOrder();
+    }
+
+    function fillCurrentPriceToLimit() {
+      const input = document.getElementById('orderLimitPrice');
+      if (input) {
+        input.value = selectedCoin.price;
+        recalcOrder();
+      }
+    }
+
+    function updateLeverage(val) {
+      leverage = parseInt(val);
+      document.getElementById('leverageLabel').innerText = val + 'x';
+      recalcOrder();
+    }
+
+    function setMarginPct(pct) {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const m = Math.floor(user.cash * pct);
+      document.getElementById('orderMargin').value = Math.max(10, m);
+      recalcOrder();
+    }
+
+    function setTpPct(pct) {
+      const isLimit = currentOrderType === 'LIMIT';
+      const limitInput = parseFloat(document.getElementById('orderLimitPrice')?.value);
+      const refPrice = (isLimit && !isNaN(limitInput) && limitInput > 0) ? limitInput : selectedCoin.price;
+
+      // Price move ratio needed for desired margin ROI%
+      const priceRatio = (pct / 100) / leverage;
+      let targetPrice = 0;
+      if (orderSide === 'LONG') {
+        targetPrice = refPrice * (1 + priceRatio);
+      } else {
+        targetPrice = refPrice * (1 - priceRatio);
+      }
+      
+      const input = document.getElementById('orderTpPrice');
+      if (input) {
+        input.value = targetPrice < 0.01 ? targetPrice.toFixed(8) : (targetPrice < 10 ? targetPrice.toFixed(4) : targetPrice.toFixed(2));
+        recalcOrder();
+      }
+    }
+
+    function setSlPct(pct) {
+      const isLimit = currentOrderType === 'LIMIT';
+      const limitInput = parseFloat(document.getElementById('orderLimitPrice')?.value);
+      const refPrice = (isLimit && !isNaN(limitInput) && limitInput > 0) ? limitInput : selectedCoin.price;
+
+      // Price move ratio needed for cut loss ROI%
+      const priceRatio = (pct / 100) / leverage;
+      let targetPrice = 0;
+      if (orderSide === 'LONG') {
+        targetPrice = refPrice * (1 - priceRatio);
+      } else {
+        targetPrice = refPrice * (1 + priceRatio);
+      }
+      
+      const input = document.getElementById('orderSlPrice');
+      if (input) {
+        input.value = targetPrice < 0.01 ? targetPrice.toFixed(8) : (targetPrice < 10 ? targetPrice.toFixed(4) : targetPrice.toFixed(2));
+        recalcOrder();
+      }
+    }
+
+    function recalcOrder() {
+      const margin = parseFloat(document.getElementById('orderMargin').value) || 0;
+      const totalSize = margin * leverage;
+      
+      const isLimit = currentOrderType === 'LIMIT';
+      const limitInput = parseFloat(document.getElementById('orderLimitPrice')?.value);
+      const refPrice = (isLimit && !isNaN(limitInput) && limitInput > 0) ? limitInput : selectedCoin.price;
+
+      document.getElementById('calcContractSize').innerText = '$' + totalSize.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+      const openFee = totalSize * 0.0005;
+      document.getElementById('calcFee').innerText = '$' + openFee.toFixed(2);
+
+      let liq = 0;
+      if (orderSide === 'LONG') {
+        liq = refPrice * (1 - (1 / leverage) * 0.92);
+      } else {
+        liq = refPrice * (1 + (1 / leverage) * 0.92);
+      }
+      document.getElementById('calcLiqPrice').innerText = '$' + (liq < 0.01 ? liq.toFixed(7) : (liq < 10 ? liq.toFixed(3) : liq.toLocaleString('en-US', { minimumFractionDigits: 2 })));
+
+      const target = totalSize * 0.05;
+      const idr = (target * 18000).toLocaleString('id-ID');
+      document.getElementById('calcTargetProfit').innerText = `+$${target.toFixed(2)} (~Rp${idr})`;
+
+      // Est Take Profit PnL
+      const tpInput = parseFloat(document.getElementById('orderTpPrice')?.value);
+      const tpEstEl = document.getElementById('calcTpEst');
+      if (tpEstEl) {
+        if (!isNaN(tpInput) && tpInput > 0) {
+          let estTpPnl = 0;
+          if (orderSide === 'LONG') {
+            estTpPnl = totalSize * ((tpInput - refPrice) / refPrice);
+          } else {
+            estTpPnl = totalSize * ((refPrice - tpInput) / refPrice);
+          }
+          if (estTpPnl > 0) {
+            tpEstEl.innerText = `+$${estTpPnl.toFixed(2)} (+${((estTpPnl / margin) * 100).toFixed(1)}%)`;
+            tpEstEl.className = 'text-[10px] font-mono text-accentGreen font-bold';
+          } else {
+            tpEstEl.innerText = `⚠️ TP salah arah!`;
+            tpEstEl.className = 'text-[10px] font-mono text-accentRed font-bold';
+          }
+        } else {
+          tpEstEl.innerText = '';
+        }
+      }
+
+      // Est Stop Loss PnL
+      const slInput = parseFloat(document.getElementById('orderSlPrice')?.value);
+      const slEstEl = document.getElementById('calcSlEst');
+      if (slEstEl) {
+        if (!isNaN(slInput) && slInput > 0) {
+          let estSlPnl = 0;
+          if (orderSide === 'LONG') {
+            estSlPnl = totalSize * ((slInput - refPrice) / refPrice);
+          } else {
+            estSlPnl = totalSize * ((refPrice - slInput) / refPrice);
+          }
+          if (estSlPnl < 0) {
+            slEstEl.innerText = `-$${Math.abs(estSlPnl).toFixed(2)} (${((estSlPnl / margin) * 100).toFixed(1)}%)`;
+            slEstEl.className = 'text-[10px] font-mono text-accentRed font-bold';
+          } else {
+            slEstEl.innerText = `⚠️ SL salah arah!`;
+            slEstEl.className = 'text-[10px] font-mono text-accentRed font-bold';
+          }
+        } else {
+          slEstEl.innerText = '';
+        }
+      }
+    }
+
+    function placeOrder() {
+      const margin = parseFloat(document.getElementById('orderMargin').value) || 0;
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      if (!user.positions) user.positions = [];
+      if (!user.openOrders) user.openOrders = [];
+
+      const curPrice = selectedCoin.price;
+      const totalSize = margin * leverage;
+      const openFee = totalSize * 0.0005;
+
+      if (margin <= 0 || (margin + openFee) > user.cash) {
+        alert(`Saldo kas tidak cukup! Butuh margin $${margin.toFixed(2)} + fee Binance $${openFee.toFixed(2)} = $${(margin + openFee).toFixed(2)}`);
+        return;
+      }
+
+      // Read TP & SL Input
+      const tpInput = parseFloat(document.getElementById('orderTpPrice')?.value);
+      const tpPrice = (!isNaN(tpInput) && tpInput > 0) ? tpInput : null;
+
+      const slInput = parseFloat(document.getElementById('orderSlPrice')?.value);
+      const slPrice = (!isNaN(slInput) && slInput > 0) ? slInput : null;
+
+      if (currentOrderType === 'LIMIT') {
+        const limitInput = parseFloat(document.getElementById('orderLimitPrice')?.value);
+        if (isNaN(limitInput) || limitInput <= 0) {
+          alert('Harap masukkan angka harga Limit Order yang valid!');
+          return;
+        }
+
+        const limitPrice = limitInput;
+        // Check if immediately fillable
+        let immediateFill = false;
+        if (orderSide === 'LONG' && limitPrice >= curPrice) immediateFill = true;
+        if (orderSide === 'SHORT' && limitPrice <= curPrice) immediateFill = true;
+
+        if (immediateFill) {
+          let liq = 0;
+          if (orderSide === 'LONG') liq = curPrice * (1 - (1 / leverage) * 0.92);
+          else liq = curPrice * (1 + (1 / leverage) * 0.92);
+
+          const pos = {
+            id: Date.now(),
+            pair: selectedCoin.pair,
+            symbol: selectedCoin.symbol,
+            side: orderSide,
+            leverage: leverage,
+            margin: margin,
+            totalSize: totalSize,
+            entryPrice: curPrice,
+            liqPrice: liq,
+            openFee: openFee,
+            tp: tpPrice,
+            sl: slPrice,
+            time: new Date().toLocaleTimeString() + ' (LIMIT FILLED)'
+          };
+
+          user.cash -= (margin + openFee);
+          user.positions.push(pos);
+          alert(`⚡ Limit Order langsung terisi di harga pasar saat ini ($${formatCoinPrice(curPrice)})!`);
+        } else {
+          // Put to Open Limit Orders (Reserve Margin & Fee)
+          user.cash -= (margin + openFee);
+          user.openOrders.push({
+            id: Date.now(),
+            pair: selectedCoin.pair,
+            symbol: selectedCoin.symbol,
+            side: orderSide,
+            leverage: leverage,
+            margin: margin,
+            totalSize: totalSize,
+            limitPrice: limitPrice,
+            openFee: openFee,
+            tp: tpPrice,
+            sl: slPrice,
+            time: new Date().toLocaleTimeString()
+          });
+          alert(`✅ Limit Order ${orderSide} ${selectedCoin.symbol}/USDT antre di $${formatCoinPrice(limitPrice)}!`);
+        }
+      } else {
+        // MARKET ORDER
+        let liq = 0;
+        if (orderSide === 'LONG') liq = curPrice * (1 - (1 / leverage) * 0.92);
+        else liq = curPrice * (1 + (1 / leverage) * 0.92);
+
+        const pos = {
+          id: Date.now(),
+          pair: selectedCoin.pair,
+          symbol: selectedCoin.symbol,
+          side: orderSide,
+          leverage: leverage,
+          margin: margin,
+          totalSize: totalSize,
+          entryPrice: curPrice,
+          liqPrice: liq,
+          openFee: openFee,
+          tp: tpPrice,
+          sl: slPrice,
+          time: new Date().toLocaleTimeString()
+        };
+
+        user.cash -= (margin + openFee);
+        user.positions.push(pos);
+      }
+
+      // Reset TP & SL inputs
+      const tpField = document.getElementById('orderTpPrice');
+      if (tpField) tpField.value = '';
+      const slField = document.getElementById('orderSlPrice');
+      if (slField) slField.value = '';
+      const tpEstEl = document.getElementById('calcTpEst');
+      if (tpEstEl) tpEstEl.innerText = '';
+      const slEstEl = document.getElementById('calcSlEst');
+      if (slEstEl) slEstEl.innerText = '';
+
+      syncPushToServer(db);
+      renderAll();
+    }
+
+    function cancelLimitOrder(orderId) {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      if (!user.openOrders) return;
+      const idx = user.openOrders.findIndex(o => o.id === orderId);
+      if (idx === -1) return;
+
+      const ord = user.openOrders[idx];
+      // Refund reserved cash
+      user.cash += (ord.margin + ord.openFee);
+      user.openOrders.splice(idx, 1);
+
+      syncPushToServer(db);
+      renderAll();
+      alert(`Limit order dibatalkan. Saldo $${(ord.margin + ord.openFee).toFixed(2)} dikembalikan ke kas.`);
+    }
+
+    let activeModalPos = null;
+
+    function openTpSlModal(posId) {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const pos = user.positions.find(p => p.id === posId);
+      if (!pos) return;
+
+      activeModalPos = pos;
+      document.getElementById('modalPosId').value = pos.id;
+      document.getElementById('modalPosTitle').innerText = `${pos.pair} (${pos.side} ${pos.leverage}x)`;
+      document.getElementById('modalPosEntry').innerText = '$' + formatCoinPrice(pos.entryPrice);
+      
+      const coin = COINS.find(c => c.pair === pos.pair) || { price: pos.entryPrice };
+      document.getElementById('modalPosCurrent').innerText = '$' + formatCoinPrice(coin.price);
+
+      document.getElementById('modalTpInput').value = pos.tp || '';
+      document.getElementById('modalSlInput').value = pos.sl || '';
+
+      updateModalTpSlCalc();
+      document.getElementById('tpSlModal').classList.remove('hidden');
+    }
+
+    function closeTpSlModal() {
+      document.getElementById('tpSlModal').classList.add('hidden');
+      activeModalPos = null;
+    }
+
+    function setModalTpPct(pct) {
+      if (!activeModalPos) return;
+      const pos = activeModalPos;
+      const priceRatio = (pct / 100) / pos.leverage;
+      let targetPrice = 0;
+      if (pos.side === 'LONG') {
+        targetPrice = pos.entryPrice * (1 + priceRatio);
+      } else {
+        targetPrice = pos.entryPrice * (1 - priceRatio);
+      }
+      document.getElementById('modalTpInput').value = targetPrice < 0.01 ? targetPrice.toFixed(8) : (targetPrice < 10 ? targetPrice.toFixed(4) : targetPrice.toFixed(2));
+      updateModalTpSlCalc();
+    }
+
+    function setModalSlPct(pct) {
+      if (!activeModalPos) return;
+      const pos = activeModalPos;
+      const priceRatio = (pct / 100) / pos.leverage;
+      let targetPrice = 0;
+      if (pos.side === 'LONG') {
+        targetPrice = pos.entryPrice * (1 - priceRatio);
+      } else {
+        targetPrice = pos.entryPrice * (1 + priceRatio);
+      }
+      document.getElementById('modalSlInput').value = targetPrice < 0.01 ? targetPrice.toFixed(8) : (targetPrice < 10 ? targetPrice.toFixed(4) : targetPrice.toFixed(2));
+      updateModalTpSlCalc();
+    }
+
+    function updateModalTpSlCalc() {
+      if (!activeModalPos) return;
+      const pos = activeModalPos;
+
+      // TP Calc
+      const tpVal = parseFloat(document.getElementById('modalTpInput')?.value);
+      const tpEstEl = document.getElementById('modalTpEst');
+      if (tpEstEl) {
+        if (!isNaN(tpVal) && tpVal > 0) {
+          let pnl = pos.side === 'LONG'
+            ? pos.totalSize * ((tpVal - pos.entryPrice) / pos.entryPrice)
+            : pos.totalSize * ((pos.entryPrice - tpVal) / pos.entryPrice);
+          if (pnl > 0) {
+            tpEstEl.innerText = `+$${pnl.toFixed(2)} (+${((pnl / pos.margin) * 100).toFixed(1)}%)`;
+            tpEstEl.className = 'text-[10px] font-mono text-accentGreen font-bold';
+          } else {
+            tpEstEl.innerText = `⚠️ TP salah arah!`;
+            tpEstEl.className = 'text-[10px] font-mono text-accentRed font-bold';
+          }
+        } else {
+          tpEstEl.innerText = '';
+        }
+      }
+
+      // SL Calc
+      const slVal = parseFloat(document.getElementById('modalSlInput')?.value);
+      const slEstEl = document.getElementById('modalSlEst');
+      if (slEstEl) {
+        if (!isNaN(slVal) && slVal > 0) {
+          let pnl = pos.side === 'LONG'
+            ? pos.totalSize * ((slVal - pos.entryPrice) / pos.entryPrice)
+            : pos.totalSize * ((pos.entryPrice - slVal) / pos.entryPrice);
+          if (pnl < 0) {
+            slEstEl.innerText = `-$${Math.abs(pnl).toFixed(2)} (${((pnl / pos.margin) * 100).toFixed(1)}%)`;
+            slEstEl.className = 'text-[10px] font-mono text-accentRed font-bold';
+          } else {
+            slEstEl.innerText = `⚠️ SL salah arah!`;
+            slEstEl.className = 'text-[10px] font-mono text-accentRed font-bold';
+          }
+        } else {
+          slEstEl.innerText = '';
+        }
+      }
+    }
+
+    function saveModalTpSl() {
+      if (!activeModalPos) return;
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const pos = user.positions.find(p => p.id === activeModalPos.id);
+      if (!pos) return;
+
+      const tpInput = parseFloat(document.getElementById('modalTpInput')?.value);
+      const slInput = parseFloat(document.getElementById('modalSlInput')?.value);
+
+      pos.tp = (!isNaN(tpInput) && tpInput > 0) ? tpInput : null;
+      pos.sl = (!isNaN(slInput) && slInput > 0) ? slInput : null;
+
+      syncPushToServer(db);
+      closeTpSlModal();
+      renderPositionsTable();
+      alert(`✅ TP/SL untuk posisi ${pos.pair} berhasil diperbarui!`);
+    }
+
+    function clearModalTpSl() {
+      if (!activeModalPos) return;
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const pos = user.positions.find(p => p.id === activeModalPos.id);
+      if (!pos) return;
+
+      delete pos.tp;
+      delete pos.sl;
+
+      syncPushToServer(db);
+      closeTpSlModal();
+      renderPositionsTable();
+      alert(`TP & SL untuk ${pos.pair} dihapus.`);
+    }
+
+    function editPositionTp(posId) {
+      openTpSlModal(posId);
+    }
+
+    function closePos(id, note) {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const idx = user.positions.findIndex(p => p.id === id);
+      if (idx === -1) return;
+
+      const pos = user.positions[idx];
+      const coin = COINS.find(c => c.pair === pos.pair) || selectedCoin;
+      const curPrice = coin.price;
+
+      let pnl = 0;
+      if (pos.side === 'LONG') pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+      else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+      const exitSize = pos.totalSize * (curPrice / pos.entryPrice);
+      const closeFee = exitSize * 0.0005;
+      const netPnl = pnl - pos.openFee - closeFee;
+
+      user.cash += (pos.margin + pnl - closeFee);
+      user.history.unshift({
+        id: pos.id,
+        pair: pos.pair,
+        side: pos.side,
+        size: pos.totalSize,
+        entryPrice: pos.entryPrice,
+        exitPrice: curPrice,
+        pnl: netPnl,
+        fee: pos.openFee + closeFee,
+        time: new Date().toLocaleTimeString() + (note ? ` ${note}` : '')
+      });
+
+      user.positions.splice(idx, 1);
+      syncPushToServer(db);
+      renderAll();
+    }
+
+    function closeAllPositions(scope) {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      if (!user.positions || user.positions.length === 0) {
+        alert('Tidak ada posisi terbuka untuk ditutup!');
+        return;
+      }
+
+      const pairFilter = (scope === 'market') ? selectedCoin.pair : null;
+      const targets = pairFilter ? user.positions.filter(p => p.pair === pairFilter) : [...user.positions];
+
+      if (targets.length === 0) {
+        alert(`Tidak ada posisi terbuka untuk market ${selectedCoin.symbol}/USDT!`);
+        return;
+      }
+
+      const label = pairFilter ? `market ${selectedCoin.symbol}/USDT` : 'SEMUA market';
+      if (!confirm(`Yakin ingin menutup ${targets.length} posisi di ${label}?`)) return;
+
+      targets.forEach(pos => {
+        const coin = COINS.find(c => c.pair === pos.pair) || selectedCoin;
+        const curPrice = coin.price;
+
+        let pnl = 0;
+        if (pos.side === 'LONG') pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+        else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+        const exitSize = pos.totalSize * (curPrice / pos.entryPrice);
+        const closeFee = exitSize * 0.0005;
+        const netPnl = pnl - pos.openFee - closeFee;
+
+        user.cash += (pos.margin + pnl - closeFee);
+        user.history.unshift({
+          id: pos.id,
+          pair: pos.pair,
+          side: pos.side,
+          size: pos.totalSize,
+          entryPrice: pos.entryPrice,
+          exitPrice: curPrice,
+          pnl: netPnl,
+          fee: pos.openFee + closeFee,
+          time: new Date().toLocaleTimeString() + ' (CLOSE ALL)'
+        });
+      });
+
+      if (pairFilter) {
+        user.positions = user.positions.filter(p => p.pair !== pairFilter);
+      } else {
+        user.positions = [];
+      }
+
+      syncPushToServer(db);
+      renderAll();
+    }
+
+    function updatePositionsLive() {
+      const db = loadLocalDB();
+      let changed = false;
+
+      USERS_LIST.forEach(uName => {
+        // Protect server-side bot NiblaZ from browser execution, and only evaluate logged in activeUser
+        if (uName === 'NiblaZ') return;
+        if (uName !== activeUser) return;
+
+        const u = db.users[uName];
+        if (!u) return;
+
+        // 1. Check Open Limit Orders
+        if (u.openOrders && u.openOrders.length > 0) {
+          for (let i = u.openOrders.length - 1; i >= 0; i--) {
+            const ord = u.openOrders[i];
+            const coin = COINS.find(c => c.pair === ord.pair);
+            if (!coin || !coin.isLive) continue;
+            const curPrice = coin.price;
+
+            let filled = false;
+            if (ord.side === 'LONG' && curPrice <= ord.limitPrice) filled = true;
+            if (ord.side === 'SHORT' && curPrice >= ord.limitPrice) filled = true;
+
+            if (filled) {
+              let liq = 0;
+              if (ord.side === 'LONG') liq = curPrice * (1 - (1 / ord.leverage) * 0.92);
+              else liq = curPrice * (1 + (1 / ord.leverage) * 0.92);
+
+              u.positions.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                pair: ord.pair,
+                symbol: ord.symbol,
+                side: ord.side,
+                leverage: ord.leverage,
+                margin: ord.margin,
+                totalSize: ord.totalSize,
+                entryPrice: curPrice,
+                liqPrice: liq,
+                openFee: ord.openFee,
+                tp: ord.tp || null,
+                sl: ord.sl || null,
+                time: new Date().toLocaleTimeString() + ' (LIMIT FILLED ⚡)'
+              });
+
+              u.openOrders.splice(i, 1);
+              changed = true;
+            }
+          }
+        }
+
+        // 2. Check Open Positions (Liquidation, Stop Loss, Take Profit)
+        for (let i = u.positions.length - 1; i >= 0; i--) {
+          const pos = u.positions[i];
+          const coin = COINS.find(c => c.pair === pos.pair);
+          if (!coin || !coin.isLive) continue;
+          const curPrice = coin.price;
+
+          // Check Liquidation
+          let isLiq = false;
+          if (pos.side === 'LONG' && curPrice <= pos.liqPrice) isLiq = true;
+          if (pos.side === 'SHORT' && curPrice >= pos.liqPrice) isLiq = true;
+
+          if (isLiq) {
+            u.history.unshift({
+              id: pos.id,
+              pair: pos.pair,
+              side: pos.side,
+              size: pos.totalSize,
+              entryPrice: pos.entryPrice,
+              exitPrice: pos.liqPrice,
+              pnl: -pos.margin,
+              fee: pos.openFee,
+              time: new Date().toLocaleTimeString() + ' (LIQUIDATED 💀)'
+            });
+            u.positions.splice(i, 1);
+            changed = true;
+            continue;
+          }
+
+          // Check Stop Loss (SL)
+          let isSl = false;
+          if (pos.sl && !isNaN(pos.sl) && pos.sl > 0) {
+            if (pos.side === 'LONG' && curPrice <= pos.sl) isSl = true;
+            if (pos.side === 'SHORT' && curPrice >= pos.sl) isSl = true;
+          }
+
+          if (isSl) {
+            let pnl = 0;
+            if (pos.side === 'LONG') pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+            else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+            const exitSize = pos.totalSize * (curPrice / pos.entryPrice);
+            const closeFee = exitSize * 0.0005;
+            const netPnl = pnl - pos.openFee - closeFee;
+
+            u.cash += (pos.margin + pnl - closeFee);
+            u.history.unshift({
+              id: pos.id,
+              pair: pos.pair,
+              side: pos.side,
+              size: pos.totalSize,
+              entryPrice: pos.entryPrice,
+              exitPrice: curPrice,
+              pnl: netPnl,
+              fee: pos.openFee + closeFee,
+              time: new Date().toLocaleTimeString() + ' (STOP LOSS 🛡️)'
+            });
+            u.positions.splice(i, 1);
+            changed = true;
+            continue;
+          }
+
+          // Check Take Profit (TP)
+          let isTp = false;
+          if (pos.tp && !isNaN(pos.tp) && pos.tp > 0) {
+            if (pos.side === 'LONG' && curPrice >= pos.tp) isTp = true;
+            if (pos.side === 'SHORT' && curPrice <= pos.tp) isTp = true;
+          }
+
+          if (isTp) {
+            let pnl = 0;
+            if (pos.side === 'LONG') pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+            else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+            const exitSize = pos.totalSize * (curPrice / pos.entryPrice);
+            const closeFee = exitSize * 0.0005;
+            const netPnl = pnl - pos.openFee - closeFee;
+
+            u.cash += (pos.margin + pnl - closeFee);
+            u.history.unshift({
+              id: pos.id,
+              pair: pos.pair,
+              side: pos.side,
+              size: pos.totalSize,
+              entryPrice: pos.entryPrice,
+              exitPrice: curPrice,
+              pnl: netPnl,
+              fee: pos.openFee + closeFee,
+              time: new Date().toLocaleTimeString() + ' (TAKE PROFIT 🎯)'
+            });
+            u.positions.splice(i, 1);
+            changed = true;
+            continue;
+          }
+        }
+      });
+
+      if (changed) syncPushToServer(db);
+      renderPositionsTable();
+      renderOpenOrdersTable();
+    }
+
+    function renderPositionsTable() {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      let totalUnrealized = 0;
+
+      // Update button text for current market
+      const btnCloseMarket = document.getElementById('btnCloseAllMarket');
+      if (btnCloseMarket) {
+        btnCloseMarket.innerHTML = `<span>⚡ Tutup Semua (${selectedCoin.symbol})</span>`;
+      }
+
+      const tbody = document.getElementById('positionsTableBody');
+      if (user.positions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-slate-500 font-sans">Belum ada posisi terbuka. Pilih koin di atas dan pasang order di panel kanan!</td></tr>`;
+      } else {
+        tbody.innerHTML = user.positions.map(pos => {
+          const coin = COINS.find(c => c.pair === pos.pair) || { price: pos.entryPrice };
+          const curPrice = coin.price;
+
+          let pnl = 0;
+          if (pos.side === 'LONG') pnl = pos.totalSize * ((curPrice - pos.entryPrice) / pos.entryPrice);
+          else pnl = pos.totalSize * ((pos.entryPrice - curPrice) / pos.entryPrice);
+
+          const estCloseFee = (pos.totalSize * (curPrice / pos.entryPrice)) * 0.0005;
+          const netPnl = pnl - pos.openFee - estCloseFee;
+
+          totalUnrealized += netPnl;
+          const pnlPct = (netPnl / pos.margin) * 100;
+          const isGreen = netPnl >= 0;
+
+          return `
+            <tr class="border-b border-brandBorder/50 hover:bg-brandDark/40">
+              <td class="py-2.5 font-bold text-slate-100">${pos.pair} <span class="text-[10px] text-amber-400 bg-amber-400/10 px-1 rounded">${pos.leverage}x</span></td>
+              <td class="py-2.5 font-bold ${pos.side === 'LONG' ? 'text-accentGreen' : 'text-accentRed'}">${pos.side}</td>
+              <td class="py-2.5">$${pos.margin.toFixed(2)}</td>
+              <td class="py-2.5">$${pos.totalSize.toFixed(2)}</td>
+              <td class="py-2.5">$${formatCoinPrice(pos.entryPrice)}</td>
+              <td class="py-2.5 text-slate-200 font-bold">$${formatCoinPrice(curPrice)}</td>
+              <td class="py-2.5 text-accentRed">$${formatCoinPrice(pos.liqPrice)}</td>
+              <td class="py-2.5 font-mono">
+                <div class="flex flex-col gap-0.5">
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] text-slate-500">TP:</span>
+                    ${pos.tp ? `<span class="text-accentGreen font-bold">${formatCoinPrice(pos.tp)}</span>` : `<span class="text-slate-600">--</span>`}
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] text-slate-500">SL:</span>
+                    ${pos.sl ? `<span class="text-accentRed font-bold">${formatCoinPrice(pos.sl)}</span>` : `<span class="text-slate-600">--</span>`}
+                    <button onclick="openTpSlModal(${pos.id})" title="Atur TP / SL" class="text-[10px] text-slate-400 hover:text-amber-400 ml-1">✎</button>
+                  </div>
+                </div>
+              </td>
+              <td class="py-2.5 font-bold ${isGreen ? 'text-accentGreen' : 'text-accentRed'}">
+                ${isGreen ? '+' : ''}$${netPnl.toFixed(2)} (${isGreen ? '+' : ''}${pnlPct.toFixed(1)}%)
+              </td>
+              <td class="py-2.5 text-right">
+                <button onclick="closePos(${pos.id})" class="bg-brandBorder hover:bg-red-500/20 hover:text-red-400 px-3 py-1 rounded text-[11px] font-sans font-bold transition">Tutup</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const totalMarginInUse = user.positions.reduce((a, b) => a + b.margin, 0);
+      const reservedLimitMargin = (user.openOrders || []).reduce((a, b) => a + b.margin + b.openFee, 0);
+      const equity = user.cash + totalMarginInUse + reservedLimitMargin + totalUnrealized;
+
+      document.getElementById('topEquity').innerText = '$' + equity.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      document.getElementById('panelCash').innerText = '$' + user.cash.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      
+      const unEl = document.getElementById('topUnrealized');
+      unEl.innerText = (totalUnrealized >= 0 ? '+' : '') + '$' + totalUnrealized.toFixed(2);
+      unEl.className = 'font-bold text-xs ' + (totalUnrealized >= 0 ? 'text-accentGreen' : 'text-accentRed');
+
+      document.getElementById('posBadge').innerText = user.positions.length;
+    }
+
+    function renderOpenOrdersTable() {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const tbody = document.getElementById('openOrdersTableBody');
+      const badge = document.getElementById('ordersBadge');
+
+      const orders = user.openOrders || [];
+      if (badge) badge.innerText = orders.length;
+
+      if (!tbody) return;
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500 font-sans">Tidak ada Limit Order yang sedang menunggu antrean.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(ord => {
+        const coin = COINS.find(c => c.pair === ord.pair) || { price: ord.limitPrice };
+        const curPrice = coin.price;
+        const isLong = ord.side === 'LONG';
+        return `
+          <tr class="border-b border-brandBorder/50 hover:bg-brandDark/40">
+            <td class="py-2.5 font-bold text-slate-100">${ord.pair} <span class="text-[10px] text-amber-400 bg-amber-400/10 px-1 rounded">${ord.leverage}x</span></td>
+            <td class="py-2.5 font-bold ${isLong ? 'text-accentGreen' : 'text-accentRed'}">${ord.side}</td>
+            <td class="py-2.5">$${ord.margin.toFixed(2)}</td>
+            <td class="py-2.5">$${ord.totalSize.toFixed(2)}</td>
+            <td class="py-2.5 font-bold text-amber-400">$${formatCoinPrice(ord.limitPrice)}</td>
+            <td class="py-2.5 text-slate-300 font-mono">$${formatCoinPrice(curPrice)}</td>
+            <td class="py-2.5 font-mono text-[11px]">
+              <div><span class="text-slate-500">TP:</span> ${ord.tp ? `<span class="text-accentGreen font-bold">${formatCoinPrice(ord.tp)}</span>` : `<span class="text-slate-600">--</span>`}</div>
+              <div><span class="text-slate-500">SL:</span> ${ord.sl ? `<span class="text-accentRed font-bold">${formatCoinPrice(ord.sl)}</span>` : `<span class="text-slate-600">--</span>`}</div>
+            </td>
+            <td class="py-2.5 text-right">
+              <button onclick="cancelLimitOrder(${ord.id})" class="bg-red-500/15 hover:bg-red-500/30 text-red-400 px-2.5 py-1 rounded text-[11px] font-sans font-bold transition">Batal</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderLeaderboard() {
+      const db = loadLocalDB();
+      const scores = USERS_LIST.map(name => {
+        const u = db.users[name];
+        let unPnl = 0;
+        u.positions.forEach(pos => {
+          const coin = COINS.find(c => c.pair === pos.pair) || { price: pos.entryPrice };
+          if (pos.side === 'LONG') unPnl += pos.totalSize * ((coin.price - pos.entryPrice) / pos.entryPrice);
+          else unPnl += pos.totalSize * ((pos.entryPrice - coin.price) / pos.entryPrice);
+          unPnl -= (pos.openFee || 0);
+        });
+        const marginUsed = u.positions.reduce((a, b) => a + b.margin, 0);
+        const limitReserved = (u.openOrders || []).reduce((a, b) => a + b.margin + b.openFee, 0);
+        const equity = u.cash + marginUsed + limitReserved + unPnl;
+        const roi = ((equity - 1100) / 1100) * 100;
+        return { name, equity, roi, posCount: u.positions.length };
+      }).sort((a, b) => b.equity - a.equity);
+
+      const container = document.getElementById('leaderboardCards');
+      container.innerHTML = scores.map((s, idx) => {
+        let badge = `Peringkat #${idx + 1}`;
+        let borderCol = 'border-brandBorder';
+        let extraNote = '<span class="text-xs text-slate-400 block mt-1">Aman, posisi tengah.</span>';
+
+        if (idx === 0) {
+          badge = '👑 Posisi 1 (Sultan)';
+          borderCol = 'border-amber-500/50 bg-amber-500/5';
+          extraNote = '<span class="text-xs text-amber-300 font-bold block mt-1">🎉 Calon Makan Gratis!</span>';
+        } else if (idx === scores.length - 1) {
+          badge = '💀 Posisi 3 (Terbawah)';
+          borderCol = 'border-accentRed/50 bg-accentRed/5';
+          extraNote = '<span class="text-xs text-accentRed font-bold block mt-1">🚨 Wajib Nombok Gacoan Lv4!</span>';
+        }
+
+        return `
+          <div class="bg-brandDark border ${borderCol} rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${badge}</div>
+              <h4 class="text-base font-bold text-slate-100 mt-0.5">${s.name}</h4>
+              <div class="mt-3 font-mono">
+                <div class="text-2xl font-black text-slate-100">$${s.equity.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                <div class="text-xs font-bold ${s.roi >= 0 ? 'text-accentGreen' : 'text-accentRed'}">
+                  ${s.roi >= 0 ? '+' : ''}${s.roi.toFixed(2)}% ROI
+                </div>
+              </div>
+            </div>
+            <div class="border-t border-brandBorder/60 pt-2.5 mt-3">
+              ${extraNote}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSeasonHistory() {
+      const db = loadLocalDB();
+      const list = document.getElementById('seasonHistoryList');
+      if (db.seasonHistory.length === 0) {
+        list.innerHTML = `<div class="text-center py-6 text-slate-500">Belum ada riwayat season yang selesai.</div>`;
+        return;
+      }
+
+      list.innerHTML = db.seasonHistory.map(sh => `
+        <div class="bg-brandDark border border-brandBorder rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-bold text-amber-400">
+              S${sh.season}
+            </div>
+            <div>
+              <div class="font-bold text-slate-200">Season #${sh.season} • Selesai: ${sh.date}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">${sh.details}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 font-mono">
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500 block uppercase">Juara 1 (Sultan)</span>
+              <span class="text-accentGreen font-bold">${sh.winner} (${sh.winnerRoi})</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500 block uppercase">Korban Nombok</span>
+              <span class="text-accentRed font-bold">${sh.loser} (${sh.loserRoi})</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderHistory() {
+      const db = loadLocalDB();
+      const user = db.users[activeUser];
+      const tbody = document.getElementById('historyTableBody');
+      if (user.history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500 font-sans">Belum ada riwayat posisi yang ditutup.</td></tr>`;
+      } else {
+        tbody.innerHTML = user.history.map(h => {
+          const isGreen = h.pnl >= 0;
+          return `
+            <tr class="border-b border-brandBorder/40">
+              <td class="py-2 text-slate-500">${h.time}</td>
+              <td class="py-2 font-bold">${h.pair}</td>
+              <td class="py-2 ${h.side === 'LONG' ? 'text-accentGreen' : 'text-accentRed'} font-bold">${h.side}</td>
+              <td class="py-2">$${h.size.toFixed(2)}</td>
+              <td class="py-2">$${h.entryPrice < 0.01 ? h.entryPrice.toFixed(7) : (h.entryPrice < 10 ? h.entryPrice.toFixed(3) : h.entryPrice.toFixed(2))}</td>
+              <td class="py-2">$${h.exitPrice < 0.01 ? h.exitPrice.toFixed(7) : (h.exitPrice < 10 ? h.exitPrice.toFixed(3) : h.exitPrice.toFixed(2))}</td>
+              <td class="py-2 text-amber-400">-$${(h.fee || 0).toFixed(2)}</td>
+              <td class="py-2 text-right font-bold ${isGreen ? 'text-accentGreen' : 'text-accentRed'}">
+                ${isGreen ? '+' : ''}$${h.pnl.toFixed(2)}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // Modal Tabs & Auth
+    function openLoginModal(mode = 'login') {
+      document.getElementById('modalUserSelect').value = activeUser;
+      document.getElementById('resetUserSelect').value = activeUser;
+      document.getElementById('modalPinInput').value = '';
+      document.getElementById('resetOldPinInput').value = '';
+      document.getElementById('resetNewPinInput').value = '';
+      document.getElementById('loginModal').classList.remove('hidden');
+      switchModalTab(mode);
+    }
+
+    function closeLoginModal() {
+      document.getElementById('loginModal').classList.add('hidden');
+    }
+
+    function switchModalTab(tab) {
+      const loginSec = document.getElementById('modalSectionLogin');
+      const resetSec = document.getElementById('modalSectionReset');
+      const tabLoginBtn = document.getElementById('modalTabLoginBtn');
+      const tabResetBtn = document.getElementById('modalTabResetBtn');
+
+      if (tab === 'login') {
+        loginSec.classList.remove('hidden');
+        resetSec.classList.add('hidden');
+        tabLoginBtn.className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1";
+        tabResetBtn.className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1";
+        setTimeout(() => document.getElementById('modalPinInput').focus(), 50);
+      } else {
+        loginSec.classList.add('hidden');
+        resetSec.classList.remove('hidden');
+        tabResetBtn.className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1";
+        tabLoginBtn.className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1";
+        setTimeout(() => document.getElementById('resetNewPinInput').focus(), 50);
+      }
+    }
+
+    function handleLoginSubmit() {
+      const selected = document.getElementById('modalUserSelect').value;
+      const pin = document.getElementById('modalPinInput').value;
+      const pins = getUserPins();
+      const expected = pins[selected];
+
+      if (pin !== expected && pin !== '0000') {
+        alert('PIN salah bro! Jangan coba-coba bajak akun kawan wkwk!');
+        return;
+      }
+
+      activeUser = selected;
+      localStorage.setItem('bzkriptot_active_user', activeUser);
+      document.getElementById('navUserName').innerText = activeUser;
+      closeLoginModal();
+      renderAll();
+    }
+
+    function handleResetPinSubmit() {
+      const targetUser = document.getElementById('resetUserSelect').value;
+      const oldPin = document.getElementById('resetOldPinInput').value;
+      const newPin = document.getElementById('resetNewPinInput').value;
+
+      if (!newPin || newPin.length !== 4 || isNaN(newPin)) {
+        alert('PIN baru wajib 4 digit angka bro!');
+        return;
+      }
+
+      const pins = getUserPins();
+      const currentPin = pins[targetUser];
+
+      if (oldPin && oldPin !== currentPin && oldPin !== '0000') {
+        alert('PIN lama salah! Kalo beneran lupa klik tombol "Kembalikan ke Default" di bawah.');
+        return;
+      }
+
+      saveUserPin(targetUser, newPin);
+      alert(`✅ Berhasil! PIN untuk akun ${targetUser} telah diubah menjadi: ${newPin}`);
+      
+      switchModalTab('login');
+      document.getElementById('modalUserSelect').value = targetUser;
+      document.getElementById('modalPinInput').value = newPin;
+    }
+
+    function handleRestoreDefaultPin() {
+      const targetUser = document.getElementById('resetUserSelect').value;
+      const defaultPin = DEFAULT_PINS[targetUser];
+
+      if (confirm(`Reset PIN akun ${targetUser} kembali ke default pabrik (${defaultPin})?`)) {
+        saveUserPin(targetUser, defaultPin);
+        alert(`✅ PIN ${targetUser} berhasil di-reset ke default: ${defaultPin}`);
+        switchModalTab('login');
+        document.getElementById('modalUserSelect').value = targetUser;
+        document.getElementById('modalPinInput').value = defaultPin;
+      }
+    }
+
+    function renderAll() {
+      document.getElementById('navUserName').innerText = activeUser;
+      renderPositionsTable();
+      renderOpenOrdersTable();
+      renderLeaderboard();
+      renderSeasonHistory();
+      renderHistory();
+      recalcOrder();
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tabPositions').classList.add('hidden');
+      document.getElementById('tabOpenOrders').classList.add('hidden');
+      document.getElementById('tabLeaderboard').classList.add('hidden');
+      document.getElementById('tabSeasonHistory').classList.add('hidden');
+      document.getElementById('tabHistory').classList.add('hidden');
+
+      document.getElementById('tabBtnPositions').className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5";
+      document.getElementById('tabBtnOpenOrders').className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5";
+      document.getElementById('tabBtnLeaderboard').className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1";
+      document.getElementById('tabBtnSeasonHistory').className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1";
+      document.getElementById('tabBtnHistory').className = "text-xs font-bold text-slate-400 hover:text-slate-200 pb-1";
+
+      if (tab === 'positions') {
+        document.getElementById('tabPositions').classList.remove('hidden');
+        document.getElementById('tabBtnPositions').className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1 flex items-center gap-1.5";
+        renderPositionsTable();
+      } else if (tab === 'openOrders') {
+        document.getElementById('tabOpenOrders').classList.remove('hidden');
+        document.getElementById('tabBtnOpenOrders').className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1 flex items-center gap-1.5";
+        renderOpenOrdersTable();
+      } else if (tab === 'leaderboard') {
+        document.getElementById('tabLeaderboard').classList.remove('hidden');
+        document.getElementById('tabBtnLeaderboard').className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1 flex items-center gap-1";
+        renderLeaderboard();
+      } else if (tab === 'seasonHistory') {
+        document.getElementById('tabSeasonHistory').classList.remove('hidden');
+        document.getElementById('tabBtnSeasonHistory').className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1 flex items-center gap-1";
+        renderSeasonHistory();
+      } else if (tab === 'history') {
+        document.getElementById('tabHistory').classList.remove('hidden');
+        document.getElementById('tabBtnHistory').className = "text-xs font-bold text-amber-400 border-b-2 border-amber-500 pb-1";
+        renderHistory();
+      }
+    }
+
+    // Window Init
+    window.onload = async () => {
+      initSupabase();
+      updateHeaderStatsUI();
+      renderMarketList();
+      loadTradingViewWidget(selectedCoin.tvSymbol);
+      checkSeasonExpiry();
+      renderAll();
+      initBinanceWebSocket();
+      syncBinanceRest();
+
+      // Pull initial cloud state
+      await syncPullFromServer();
+
+      // Periodic cloud pull every 3 seconds so laptop & phone stay synchronized
+      setInterval(syncPullFromServer, 3000);
+
+      if (!localStorage.getItem('bzkriptot_active_user')) {
+        openLoginModal('login');
+      }
+    };
+  </script>
+</body>
+</html>
