@@ -52,6 +52,9 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <button onclick="openSupabaseModal()" title="Koneksi Supabase Cloud DB" class="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded border border-emerald-500/30 transition flex items-center gap-1 font-mono font-bold">
+          <span>⚡</span> <span class="hidden sm:inline">Supabase</span>
+        </button>
         <span id="syncBadge" class="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-md flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>LIVE SYNC</span>
@@ -393,6 +396,44 @@
     BzKRIPtot v2.5 — Realtime Binance Live Engine & Tongkrongan Kafe Duanja
   </footer>
 
+  <!-- Supabase Config Modal -->
+  <div id="supabaseModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-brandCard border border-brandBorder rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-brandBorder pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm font-bold">⚡</div>
+          <h3 class="text-sm font-bold text-slate-100">Koneksi Supabase Cloud (Gratis)</h3>
+        </div>
+        <button onclick="closeSupabaseModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300">
+        Pastikan Project URL dan Anon Key sama persis dengan yang dipakai di terminal trading.
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Supabase Project URL</label>
+          <input type="text" id="sbUrlInput" placeholder="https://xyzcompany.supabase.co" class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Supabase Anon Public Key</label>
+          <input type="text" id="sbKeyInput" placeholder="eyJhbG...IsIn..." class="w-full bg-brandDark border border-brandBorder rounded-lg px-3 py-2 text-xs font-mono text-slate-100 outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="handleSaveSupabaseConfig()" class="flex-1 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xs uppercase transition shadow-lg shadow-emerald-500/20">
+            Hubungkan Sekarang
+          </button>
+          <button onclick="handleDisconnectSupabase()" class="px-3 py-2.5 rounded-lg bg-brandDark border border-brandBorder text-slate-400 hover:text-red-400 text-xs transition">
+            Reset Default
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Logic Script -->
   <script>
     const DEFAULT_SB_URL = 'https://hlbskawdbrcpwmknizpq.supabase.co';
@@ -433,6 +474,46 @@
         }
       } catch(e) {
         console.warn('Supabase init error:', e);
+      }
+    }
+
+    function openSupabaseModal() {
+      const cfg = getSupabaseConfig();
+      if (cfg) {
+        document.getElementById('sbUrlInput').value = cfg.url;
+        document.getElementById('sbKeyInput').value = cfg.key;
+      }
+      document.getElementById('supabaseModal').classList.remove('hidden');
+    }
+
+    function closeSupabaseModal() {
+      document.getElementById('supabaseModal').classList.add('hidden');
+    }
+
+    function handleSaveSupabaseConfig() {
+      const url = document.getElementById('sbUrlInput').value.trim();
+      const key = document.getElementById('sbKeyInput').value.trim();
+      if (!url || !key) {
+        alert('Harap isi Project URL dan Anon Key dari dashboard Supabase!');
+        return;
+      }
+      localStorage.setItem('bzkriptot_sb_url', url);
+      localStorage.setItem('bzkriptot_sb_key', key);
+      initSupabase();
+      fetchData();
+      closeSupabaseModal();
+      alert('✅ Berhasil terhubung ke Supabase! Audit History realtime aktif.');
+    }
+
+    function handleDisconnectSupabase() {
+      if (confirm('Putuskan koneksi ke Supabase custom dan kembali ke default?')) {
+        localStorage.removeItem('bzkriptot_sb_url');
+        localStorage.removeItem('bzkriptot_sb_key');
+        supabaseClient = null;
+        closeSupabaseModal();
+        initSupabase();
+        fetchData();
+        alert('Koneksi Supabase direset ke default.');
       }
     }
 
